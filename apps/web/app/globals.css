@@ -12,12 +12,14 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Deliberately no dark-mode media query: every page (Applicant, HR, Tech
+   Lead) assumes a light background with explicit dark text classes
+   (text-zinc-900, text-slate-900, etc.) rather than adapting per-element
+   to a dark background. The Applicant page's <main> in particular sets no
+   background of its own, so it inherited the dark `body` background here
+   under prefers-color-scheme: dark while keeping dark text — unreadable
+   black-on-black. Committing the whole site to light mode is simpler and
+   safer than auditing every page for dark-mode-safe colors. */
 
 body {
   background: var(--background);

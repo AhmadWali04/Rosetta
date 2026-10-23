@@ -69,6 +69,13 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    environment:
+      # Next.js SSR runs inside this container, where "localhost" means
+      # this container, not api's — reach it via the Compose service name.
+      API_BASE_URL_INTERNAL: http://api:8000
+    depends_on:
+      api:
+        condition: service_started
     command: sh -c "npm install && npm run dev -- -H 0.0.0.0"
 
   # Pinecone Local (Docker emulator), only started with `make up-offline`

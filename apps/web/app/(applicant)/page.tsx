@@ -50,7 +50,7 @@ export default async function JobPostingPage() {
   const niceToHaves = requirements.filter((r) => r.kind === "nice_to_have");
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
+    <main className="mx-auto min-h-screen max-w-3xl bg-white px-6 py-12">
       <header className="mb-8 border-b border-zinc-200 pb-8">
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
           {job.title}

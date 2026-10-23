@@ -2,7 +2,7 @@
 
 > Live tracker (agents.md: "Read it before starting. Update it before ending a session.")
 
-## Status: M3 — Recruiter Copilot implemented; fake-provider tests and native Postgres acceptance verified; Docker recovery pending
+## Status: M0-M4 built and live-verified against the real Docker stack (M5/M6 remain). Demo-ready.
 
 M0 scope (PRD §17): repo scaffold, Docker Compose, DB schema, VectorStore
 interface (memory + Pinecone Local + Pinecone), `make pinecone-init`, seed
@@ -556,7 +556,80 @@ found all third-party Python import roots covered; frontend dependencies
 remain npm-managed. `make lint` and all 299 backend tests pass. No fresh
 pip environment was installed as part of this export.
 
+## M4 — Tech Lead portal (minimal, built under a 1-hour demo deadline)
+
+Built directly (no multi-agent dispatch — time didn't allow the round-trip
+overhead) after discovering M2/M3 had been built in parallel via Codex
+while this session was rate-limited. Scope was deliberately triaged to the
+minimum needed for the PRD §16 demo beat, not the full F3.1-F3.6 spec:
+
+- `GET /tech/applications` (queue of `status="valid"` candidates),
+  `GET /tech/applications/{id}` (full evidence-linked profile — reuses
+  `app/services/hr.py`'s role-agnostic `pipeline`/`detail`/`_requirements`
+  read functions directly, no duplication), `POST /tech/applications/{id}
+  /decision` (invite/decline + a `Review` row with per-requirement rubric
+  scores). `app/routes/tech.py`, `app/routes/tech_schemas.py`,
+  `app/services/tech.py` (new); wired into `app/main.py`.
+- `apps/web/app/(tech)/tech/{page,TechPortal}.tsx` — queue table, profile
+  view (requirement checklist + resume evidence, reusing the same
+  rendering approach as the HR drawer), a 1-5 rubric score per requirement,
+  Invite/Decline buttons. Role switcher updated (`tech` was a disabled
+  placeholder option, now live).
+- `apps/api/tests/routes/test_tech.py` (8 tests, all passing) covers role
+  enforcement, queue filtering, the `status != "valid"` 409 guard, and that
+  invite/decline both persist the `Review` row and the status transition.
+- **Explicitly NOT built** (time-boxed out): AI-generated interview
+  questions (needs a live LLM call the account has no credits for right
+  now — would be a no-op/broken demo feature), anchored free-text comments
+  (a single comment textarea substitutes), a `react-pdf` viewer (same
+  chunk-text-evidence approach as the HR drawer, not the literal PDF).
+
+## Live demo-readiness pass (this session, ~1 hour before demo)
+
+- **Parallel work discovered mid-session**: while this session was
+  rate-limited, the user used a separate Codex session to build M2 (HR
+  portal, pool scoring, blind mode, promotion) and M3 (full Recruiter
+  Copilot: supervisor routing, Deep Verify, grounding retries, real
+  `interrupt()`-based HITL, durable `copilot_runs`, SSE streaming) end to
+  end — 5 additional commits, 299 backend tests, 28 frontend tests, all
+  passing on arrival. Verified rather than assumed: reran the full
+  lint/test/build suite myself before trusting any of it.
+- Docker's Postgres had an unclean shutdown (disk pressure, consistent
+  with the earlier M0/M1 pattern) but recovered cleanly via WAL replay on
+  restart — no data lost, no VM reset needed this time.
+- Applied migrations 0002/0003 (score components, durable copilot runs)
+  to the real Docker Postgres; `alembic check`'s "drift" on LangGraph's
+  own `checkpoints`/`checkpoint_*` tables is expected noise (those tables
+  are owned by `PostgresSaver.setup()`, not Alembic/`Base.metadata`) —
+  not a real schema problem.
+- Added `apps/api/scripts/seed_demo_applicants.py` + `make seed-demo`:
+  5 hand-authored demo applicants spanning advance/review/decline/
+  keyword-stuffed/injection-flagged tiers, built by directly constructing
+  `Application`/`ResumeChunk`/`Profile`/`Event` rows (not running the real
+  intake graph) since OpenAI credits are still unavailable — every
+  citation and skill reference points at a real chunk created in the same
+  run, verified live against `GET /hr/applications` and
+  `GET /hr/applications/:id`.
+- **Found and fixed a real Docker networking bug** via live verification:
+  the Applicant portal's home page (`GET /`) 500'd when accessed through
+  the full `docker compose up` stack (not when run via plain `npm run
+  dev`) — Next.js's server-side rendering happens *inside* the `web`
+  container, where `localhost:8000` means the web container itself, not
+  the `api` container. Fixed with a server/client-aware base URL in
+  `lib/api.ts` (`API_BASE_URL_INTERNAL=http://api:8000` for SSR, the
+  existing `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` unchanged for
+  the browser) and a matching `docker-compose.yml` env var on the `web`
+  service. This would have broken the very first page of the live demo.
+- Final state verified via live HTTP against the running Docker stack
+  (not just `npm run build`): `/`, `/apply`, `/hr`, `/tech` all return 200;
+  `/hr/applications` and `/tech/applications` return real seeded data;
+  promoted `demo-strong-01`/`demo-vocab-02` to `valid` via the real
+  `PATCH /applications/:id/status` endpoint so the Tech Lead queue has
+  live candidates ready for the user to invite/decline during the demo
+  itself (deliberately left un-decided).
+
 ## Not started
 
-M4 (Tech Lead portal), M5 (eval
-harness + Langfuse), M6 (polish + demo).
+M5 (eval harness + Langfuse), M6 (polish + demo script rehearsal).
+Interview-question generation and anchored comments (M4 stretch, see
+above) remain open if there's time after the demo.

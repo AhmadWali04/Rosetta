@@ -41,6 +41,13 @@ pinecone-init:
 seed:
 	cd apps/api && uv run --env-file ../../.env python -m scripts.seed
 
+# Hand-authored demo applicant pool (advance/review/decline/flagged tiers)
+# for the HR/Copilot/Tech-Lead portals — run after `make seed`. Bypasses
+# the live intake graph (no OpenAI calls), since the account currently has
+# no credits; see scripts/seed_demo_applicants.py's module docstring.
+seed-demo:
+	cd apps/api && uv run --env-file ../../.env python -m scripts.seed_demo_applicants
+
 reindex:
 	@echo "make reindex is a stretch target not required for M0 acceptance;"
 	@echo "use 'make vector-audit NS=<namespace>' to check parity, then re-run"

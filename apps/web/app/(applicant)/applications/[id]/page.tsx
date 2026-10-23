@@ -30,7 +30,7 @@ export default async function ApplicationConfirmationPage({
   }
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-16 text-center">
+    <main className="mx-auto min-h-screen max-w-xl bg-white px-6 py-16 text-center">
       <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
         Thanks — your application has been received
       </h1>

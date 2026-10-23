@@ -8,7 +8,7 @@ import ApplyForm from "./ApplyForm";
 // ("use client"), kept separate so it's testable in isolation.
 export default function ApplyPage() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-12">
+    <main className="mx-auto min-h-screen max-w-2xl bg-white px-6 py-12">
       <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-700">
         ← Back to posting
       </Link>

@@ -15,7 +15,19 @@ import createClient from "openapi-fetch";
 
 import type { paths } from "./api-types";
 
+// Two different base URLs are needed in Docker: the browser (client-side
+// fetches, and server-rendered pages viewed directly) reaches the api
+// container via its published host port (localhost:8000), but Next.js's
+// own server-side rendering runs *inside* the web container, where
+// "localhost" refers to the web container itself, not the api one — it
+// must use the Docker Compose service name instead (api:8000).
+// API_BASE_URL_INTERNAL has no NEXT_PUBLIC_ prefix so it's never inlined
+// into the client bundle; it's only read here, server-side.
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
-export const api = createClient<paths>({ baseUrl: API_BASE_URL });
+const API_BASE_URL_INTERNAL = process.env.API_BASE_URL_INTERNAL ?? API_BASE_URL;
+
+export const api = createClient<paths>({
+  baseUrl: typeof window === "undefined" ? API_BASE_URL_INTERNAL : API_BASE_URL,
+});

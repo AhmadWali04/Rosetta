@@ -47,8 +47,6 @@ export default function TechPortal() {
 
   useEffect(() => {
     let current = true;
-    setLoading(true);
-    setError("");
     api
       .GET("/tech/applications", { headers: HEADERS, params: { query: { job_id: JOB_ID } } })
       .then(({ data, error }) => {
@@ -70,11 +68,6 @@ export default function TechPortal() {
   useEffect(() => {
     if (!selected) return;
     let current = true;
-    setDetail(null);
-    setDetailLoading(true);
-    setDetailError("");
-    setScores({});
-    setComment("");
     api
       .GET("/tech/applications/{application_id}", {
         headers: HEADERS,
@@ -97,8 +90,22 @@ export default function TechPortal() {
   }, [selected, revision]);
 
   const refresh = useCallback(() => {
+    setLoading(true);
+    setError("");
+    setDetailLoading(true);
+    setDetailError("");
     setRevision((value) => value + 1);
   }, []);
+
+  function selectCandidate(id: string) {
+    if (id === selected || saving) return;
+    setDetail(null);
+    setDetailLoading(true);
+    setDetailError("");
+    setScores({});
+    setComment("");
+    setSelected(id);
+  }
 
   async function decide(decisionValue: "invited" | "rejected") {
     if (!detail || saving) return;
@@ -204,7 +211,7 @@ export default function TechPortal() {
                           type="button"
                           className="text-left font-semibold text-indigo-900 underline-offset-4 hover:underline"
                           disabled={saving}
-                          onClick={() => setSelected(candidate.id)}
+                          onClick={() => selectCandidate(candidate.id)}
                         >
                           {candidate.name}
                         </button>
