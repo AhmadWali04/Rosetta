@@ -1,4 +1,5 @@
 """Compare candidate evidence without treating scores as supporting citations."""
+
 from typing import Any
 
 from app.graphs.copilot.common import generate_answer

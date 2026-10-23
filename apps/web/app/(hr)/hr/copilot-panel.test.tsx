@@ -20,7 +20,7 @@ const baseResult: Result = {
 const props = { jobId: "job-1", candidateId: "candidate-1", blind: false, onCitation: vi.fn(), onStatusChanged: vi.fn() };
 let fetchMock: ReturnType<typeof vi.fn>;
 
-function event(result: Result | null, status = "completed", name: Event["event"] = "result"): Event {
+function event(result: Result | null, status: Event["status"] = "completed", name: Event["event"] = "result"): Event {
   return { event: name, run_id: "run-1", status, result, error: null };
 }
 
@@ -43,7 +43,7 @@ async function ask() {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  fetchMock = vi.fn().mockResolvedValue(response([event(null, "queued", "queued"), event(null, "evidence_verifier", "progress"), event(baseResult)]));
+  fetchMock = vi.fn().mockResolvedValue(response([event(null, "queued", "queued"), event(null, "running", "progress"), event(baseResult)]));
   vi.stubGlobal("fetch", fetchMock);
 });
 
@@ -80,10 +80,27 @@ it("shows taxonomy explanations without inventing candidate evidence", async () 
   expect(screen.queryByRole("button", { name: /View source/ })).not.toBeInTheDocument();
 });
 
+it.each(["similar", "verify"])("handles peer citations according to the %s route", async (route) => {
+  const peerCitation = { ...citation, chunk_id: "peer-chunk", application_id: "candidate-2" };
+  fetchMock.mockResolvedValue(response([event({ ...baseResult, route, citations: [peerCitation], claims: [{ text: "Peer built a comparable pipeline.", chunk_ids: [peerCitation.chunk_id] }] })]));
+  render(<CopilotPanel {...props} />);
+  const user = await ask();
+  await screen.findByText(`Agent: ${route}`);
+  if (route === "similar") {
+    expect(screen.getByText("Peer built a comparable pipeline.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "View source 1 for claim 1" }));
+    expect(props.onCitation).toHaveBeenCalledWith(peerCitation);
+  } else {
+    expect(screen.queryByText("Peer built a comparable pipeline.")).not.toBeInTheDocument();
+    expect(screen.getByText("No grounded candidate claims could be verified from the available evidence.")).toBeInTheDocument();
+  }
+});
+
 it.each([true, false])("requires an explicit human confirmation choice (%s)", async (approve) => {
-  const proposed: Result = { ...baseResult, route: "update_status", needs_confirmation: true, proposal: { application_id: "candidate-1", status: "pending", reason: "HR requested further review" } };
+  const proposed: Result = { ...baseResult, route: "update_status", claims: [], citations: [], explanation: "", needs_confirmation: true, proposal: { application_id: "candidate-1", status: "pending", reason: "HR requested further review" } };
+  const outcome = approve ? "The HR-confirmed status change was recorded in the audit log." : "Status change cancelled; no candidate status was changed.";
   fetchMock.mockResolvedValueOnce(response([event(proposed, "awaiting_confirmation")]))
-    .mockResolvedValueOnce(response([event({ ...proposed, needs_confirmation: false, proposal: null }, approve ? "completed" : "cancelled")]));
+    .mockResolvedValueOnce(response([event({ ...proposed, explanation: outcome, needs_confirmation: false, proposal: null }, "completed")]));
   render(<CopilotPanel {...props} />);
   const user = await ask();
   await screen.findByRole("button", { name: "Confirm status change" });
@@ -93,6 +110,8 @@ it.each([true, false])("requires an explicit human confirmation choice (%s)", as
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   expect(fetchMock).toHaveBeenLastCalledWith("http://localhost:8000/copilot/run-1/confirm", expect.objectContaining({ body: JSON.stringify({ approve }) }));
   await waitFor(() => expect(screen.queryByRole("button", { name: "Confirm status change" })).not.toBeInTheDocument());
+  expect(screen.getByText(outcome)).toBeInTheDocument();
+  expect(screen.queryByText("No grounded candidate claims could be verified from the available evidence.")).not.toBeInTheDocument();
   expect(props.onStatusChanged).toHaveBeenCalledTimes(approve ? 1 : 0);
 });
 
@@ -136,6 +155,23 @@ it("reports an incomplete stream while retaining the queued run ID", async () =>
   await ask();
   expect(await screen.findByRole("alert")).toHaveTextContent("event stream ended before a result");
   expect(screen.getByText("Run run-1")).toBeInTheDocument();
+});
+
+it("recovers a durable result with a read-only status request after a disconnected stream", async () => {
+  fetchMock.mockResolvedValueOnce(response([event(null, "queued", "queued")]))
+    .mockResolvedValueOnce(new Response(JSON.stringify({
+      id: "run-1", job_id: "job-1", scope: "candidate:candidate-1", message: "Verify RAG experience",
+      status: "completed", result: baseResult, error: null, created_at: "2026-10-23T12:00:00",
+    }), { headers: { "Content-Type": "application/json" } }));
+  render(<CopilotPanel {...props} />);
+  const user = await ask();
+  await screen.findByRole("alert");
+  await user.click(screen.getByRole("button", { name: "Check run status" }));
+  expect(await screen.findByText("Built a RAG pipeline 🔎")).toBeInTheDocument();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(fetchMock).toHaveBeenLastCalledWith("http://localhost:8000/copilot/run-1", expect.objectContaining({ headers: { "X-Role": "hr" } }));
+  expect(fetchMock.mock.calls[1][1]).not.toHaveProperty("method", "POST");
+  expect(props.onStatusChanged).not.toHaveBeenCalled();
 });
 
 it.each(["malformed", "http", "server"])("shows a recoverable %s failure", async (kind) => {

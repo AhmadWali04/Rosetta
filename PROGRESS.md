@@ -2,7 +2,7 @@
 
 > Live tracker (agents.md: "Read it before starting. Update it before ending a session.")
 
-## Status: M2 — HR workflows and pool scoring verified, including clean-DB offline acceptance; UI stack deviations remain
+## Status: M3 — Recruiter Copilot implemented; fake-provider tests and native Postgres acceptance verified; Docker recovery pending
 
 M0 scope (PRD §17): repo scaffold, Docker Compose, DB schema, VectorStore
 interface (memory + Pinecone Local + Pinecone), `make pinecone-init`, seed
@@ -457,12 +457,93 @@ asked about individually, since the user authorized "keep building")
 - User requested a reduced-scope continuation with parallel subagents.
   Re-read AGENTS/PRD/PROGRESS and searched for alternate scoped files: current
   PRD edits are whitespace-only, and PRD/PROGRESS still specify M3–M6 in full.
-  Asked which features were cut or whether revised files are unsaved; awaiting
-  clarification before starting product features that may be out of scope.
+  Asked which features were cut or whether revised files are unsaved. User
+  subsequently instructed “Keep building what is left”; proceeding with the
+  currently saved PRD scope, as stated before starting M3.
   Three subagents handled the audit primitive, operational command/tests,
   and independent scope/correctness review in separate ownership scopes.
 
+## M3 — Recruiter Copilot (F2.3, PRD §7.2/§7.3)
+
+### Implemented
+
+- A dynamic LangGraph supervisor routes verify, compare, similar, taxonomy
+  explanation, interview questions, and status proposals to separate nodes.
+  Low verifier confidence invokes Deep Verify once and re-evaluates; invalid
+  citations route through up to two grounding retries, then unsupported
+  claims are omitted with an explicit fallback. Static intake stays linear.
+- Scoped tools hydrate evidence only from Postgres. Hybrid retrieval falls
+  back to Postgres with warnings; pool context is bounded and includes saved
+  ranking inputs. Similarity reads the dense candidate-summary index through
+  `app/rag/similarity.py`, validates peers against the job, and re-embeds a
+  summary from persisted chunks because VectorStore.fetch exposes no values.
+- Comparison/similarity claims require citations from at least two candidate
+  owners; candidate-anchored similarity must include that selected candidate.
+  No-peer similarity emits no claims without invoking an answer LLM.
+- GitHub Deep Verify accepts only public HTTPS github.com username links,
+  uses fixed api.github.com endpoints, bounded repos/timeouts, and no
+  redirects. External context is supplementary and cannot replace resume
+  citations. Arbitrary portfolio fetching is deliberately not implemented.
+- LLM calls use `app/llm` structured outputs with six versioned copilot v1
+  prompts. User, resume and external data are serialized into delimited
+  user-turn blocks; candidate claims outside cited outputs are suppressed.
+  Taxonomy explanations display hydrated taxonomy descriptions.
+- Copilot status changes pause at a real LangGraph `interrupt`. Approve or
+  cancel resumes the same Postgres checkpoint; the scoped write tool calls
+  the existing audited HR label service only after explicit approval.
+  Checkpoint serializer explicitly permits the three nested copilot models.
+- Durable `copilot_runs` model and new `0003_copilot_runs` migration support
+  queued/running/awaiting_confirmation/completed/failed states. API requests
+  only enqueue and stream database state; all graph/model work runs in the
+  worker. SKIP LOCKED claims plus committed running status prevent duplicate
+  polls. Crashed running jobs remain visible rather than automatically
+  replaying potentially committed status writes.
+- HR-only `POST /copilot`, `POST /copilot/{run_id}/confirm`, and
+  `GET /copilot/{run_id}` expose generated event/run contracts. SSE streams
+  end on completion, interrupt, failure, or listener timeout; GET recovers
+  results after disconnect. Duplicate/out-of-scope confirmations are blocked.
+  Requests, starts, completion, failures and confirmations write events.
+- HR chat supports pool/candidate scope, route steps, cited claims, warnings,
+  explicit confirm/cancel, interrupted-stream recovery, and peer citations
+  that open the target candidate's hydrated resume chunk. Context changes
+  abort listeners and clear results; blind mode disables identity-bearing
+  chat. No new dependencies, providers, indexes or services were added.
+
+### Verification and environment limits
+
+- Final integrated checks: `make lint` passes (ruff/format, strict mypy on
+  graph/tools/LLM packages, ESLint and TypeScript), `make test-api` passes
+  299 tests, `make test-web` passes 28 tests, `git diff --check` passes.
+  The final native Postgres smoke also passes after comparative-grounding
+  and explicit checkpoint serializer fixes, with no serializer warning.
+- Added `make smoke-copilot`, extending the isolated HR smoke with the real
+  worker, SSE endpoint, fake structured provider, cited answers, Deep Verify
+  fallback, grounding retry, and real Postgres interrupt/cancel/approve plus
+  audit/duplicate-confirm checks. All external HTTP transports stay blocked.
+- Docker's Postgres began reporting `global/pg_filenode.map: Input/output
+  error` after disk exhaustion, and Docker commands hung. Normal Docker
+  Desktop restart timed out. No Docker disk, database volume, container or
+  source data was deleted. An attempted disposable builder-cache prune also
+  hung. npm's download cache was cleaned (installed dependencies retained),
+  freeing about 2.9 GB initially; disk remains low and fluctuates.
+- `make migrate` could not complete against Docker; `make migrate LOCAL=1`
+  now supports a direct local DB connection but that same Docker DB reports
+  I/O failure. Migration 0003 is NOT claimed applied to the main Docker DB.
+- Verified `make smoke-copilot
+  DATABASE_URL=postgresql+psycopg://ahmadwali04@localhost:5432/postgres`
+  against a disposable database on native Postgres instead. Migrations
+  0001–0003 and zero-drift Alembic check passed; the complete fake-provider
+  intake/HR/copilot workflow passed, and its temporary DB/files were removed.
+  Native existing databases and main application data were left untouched.
+- New prompts: ran `make eval-fast`; target still prints its M5 placeholder.
+  No live-model quality delta or router-accuracy metric is claimed. Existing
+  OpenAI-credit limitation remains; provider calls are verified with fakes.
+- Real Langfuse spans remain M5 work; copilot uses the same stdout callback
+  hook as intake. Live GitHub success/rate limits and browser-driven full
+  acceptance remain unverified. Existing native Tailwind/text-viewer stack
+  deviations remain recorded from M2.
+
 ## Not started
 
-M3 (copilot dynamic graph), M4 (Tech Lead portal), M5 (eval
+M4 (Tech Lead portal), M5 (eval
 harness + Langfuse), M6 (polish + demo).

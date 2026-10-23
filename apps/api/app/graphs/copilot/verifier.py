@@ -1,4 +1,5 @@
 """Evidence verification; its confidence drives the Deep Verify branch."""
+
 from typing import Any
 
 from app.graphs.copilot.common import generate_answer

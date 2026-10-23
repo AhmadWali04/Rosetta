@@ -43,9 +43,7 @@ def process_pending_copilot(db: Session, run_graph: GraphRunner | None = None) -
     run.status = "running"
     audit_run(db, run, "copilot_started", payload={"resuming": run.confirmation is not None})
     db.commit()
-    state = CopilotState(
-        run_id=run.id, job_id=run.job_id, scope=run.scope, message=run.message
-    )
+    state = CopilotState(run_id=run.id, job_id=run.job_id, scope=run.scope, message=run.message)
     try:
         runner = run_graph or _default_runner()
         result = runner(state, run.confirmation)
@@ -61,10 +59,14 @@ def process_pending_copilot(db: Session, run_graph: GraphRunner | None = None) -
             db,
             run,
             "copilot_awaiting_confirmation" if result.needs_confirmation else "copilot_completed",
-            payload={"route": result.route, "retries": result.retries, "steps": result.steps},
+            payload={
+                "route": result.route,
+                "retries": result.retries,
+                "steps": result.steps,
+            },
         )
         db.commit()
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - a failed graph must not terminate the worker
         db.rollback()
         run = get_run(db, run_id, lock=True)
         run.status = "failed"

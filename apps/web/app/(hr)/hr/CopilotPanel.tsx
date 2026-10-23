@@ -9,6 +9,7 @@ type CopilotEvent = components["schemas"]["CopilotEvent"];
 type Result = components["schemas"]["CopilotResult"];
 type Request = components["schemas"]["CopilotRequest"];
 type Confirmation = components["schemas"]["CopilotConfirmation"];
+type Run = components["schemas"]["CopilotRunOut"];
 
 type Props = {
   jobId: string;
@@ -58,6 +59,13 @@ function readEvent(value: unknown): CopilotEvent {
     throw new Error("The copilot returned an invalid event. Check the run status before retrying.");
   }
   return value as CopilotEvent;
+}
+
+function isRun(value: unknown): value is Run {
+  return object(value)
+    && ["id", "job_id", "scope", "message", "status", "created_at"].every((key) => typeof value[key] === "string")
+    && (value.result === null || isResult(value.result))
+    && (value.error === null || typeof value.error === "string");
 }
 
 /** Network chunks may split both event boundaries and UTF-8 characters. */
@@ -120,6 +128,7 @@ function Conversation({ jobId, candidateId, onCitation, onStatusChanged }: Props
   const [status, setStatus] = useState("");
   const active = useRef<AbortController | null>(null);
   const requestId = useRef(0);
+  const awaitingStatusRefresh = useRef(false);
 
   useEffect(() => () => { active.current?.abort(); requestId.current += 1; }, []);
 
@@ -134,6 +143,7 @@ function Conversation({ jobId, candidateId, onCitation, onStatusChanged }: Props
     setRunId(null);
     setError("");
     setStatus("");
+    awaitingStatusRefresh.current = false;
   }
 
   async function stream(path: string, body: Request | Confirmation, approval = false) {
@@ -143,6 +153,7 @@ function Conversation({ jobId, candidateId, onCitation, onStatusChanged }: Props
     const id = ++requestId.current;
     setBusy(true);
     setError("");
+    awaitingStatusRefresh.current = approval;
     let terminal = false;
     let notified = false;
     try {
@@ -162,9 +173,10 @@ function Conversation({ jobId, candidateId, onCitation, onStatusChanged }: Props
         }
         if (event.event === "result") {
           terminal = true;
-          setResult(event.result);
+          setResult(event.result ?? null);
           if (approval && event.status === "completed" && !event.result?.needs_confirmation && !notified) {
             notified = true;
+            awaitingStatusRefresh.current = false;
             onStatusChanged();
           }
         }
@@ -194,26 +206,58 @@ function Conversation({ jobId, candidateId, onCitation, onStatusChanged }: Props
     void stream(`/copilot/${encodeURIComponent(runId)}/confirm`, body, approve);
   }
 
-  const validCitations = result?.citations.filter((citation) => scope !== "candidate" || citation.application_id === candidateId) ?? [];
-  const groundedClaims = result?.claims.filter((claim) => claim.chunk_ids.length > 0 && claim.chunk_ids.every((id) => validCitations.some((citation) => citation.chunk_id === id))) ?? [];
-  const droppedClaims = (result?.claims.length ?? 0) - groundedClaims.length;
+  async function checkRun() {
+    if (!runId || busy) return;
+    active.current?.abort();
+    const controller = new AbortController();
+    active.current = controller;
+    const id = ++requestId.current;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/copilot/${encodeURIComponent(runId)}`, { headers: { "X-Role": "hr" }, signal: controller.signal });
+      if (!response.ok) throw new Error(`Could not check the run (${response.status}).`);
+      const run: unknown = await response.json();
+      if (id !== requestId.current || controller.signal.aborted) return;
+      const expectedScope = scope === "candidate" && candidateId ? `candidate:${candidateId}` : "pool";
+      if (!isRun(run) || run.id !== runId || run.job_id !== jobId || run.scope !== expectedScope) throw new Error("The copilot returned an invalid run status.");
+      setStatus(run.status);
+      setResult(run.result);
+      if (run.error) setError(run.error);
+      if (run.status === "completed" && awaitingStatusRefresh.current && !run.result?.needs_confirmation) {
+        awaitingStatusRefresh.current = false;
+        onStatusChanged();
+      }
+    } catch (err) {
+      if (id === requestId.current && !controller.signal.aborted) setError(err instanceof Error ? err.message : "Could not check the run.");
+    } finally {
+      if (id === requestId.current) setBusy(false);
+    }
+  }
+
+  const validCitations = result?.citations?.filter((citation) => scope !== "candidate" || result.route === "similar" || citation.application_id === candidateId) ?? [];
+  const groundedClaims = result?.claims?.filter((claim) => (claim.chunk_ids?.length ?? 0) > 0 && (claim.chunk_ids ?? []).every((id) => validCitations.some((citation) => citation.chunk_id === id))) ?? [];
+  const warnings = result?.warnings ?? [];
+  const steps = result?.steps ?? [];
+  const droppedClaims = (result?.claims?.length ?? 0) - groundedClaims.length;
 
   return <div>
     <form onSubmit={ask}>
       <label className="mb-3 flex flex-wrap items-center gap-3 text-sm font-medium">Ask about<select className={control} value={scope} onChange={(event) => resetScope(event.target.value as "candidate" | "pool")} aria-label="Copilot scope"><option value="pool">Entire candidate pool</option><option value="candidate" disabled={!candidateId}>Selected candidate</option></select></label>
       <label className="grid gap-2 text-sm font-medium">Your question<textarea className={control} rows={3} value={message} maxLength={4000} onChange={(event) => setMessage(event.target.value)} placeholder={scope === "candidate" ? "Does this candidate have evidence of building RAG systems?" : "Compare candidates on evaluation experience."} disabled={busy} /></label>
       <div className="mt-3 flex flex-wrap items-center gap-3"><button className={primary} type="submit" disabled={busy || !message.trim()}>{busy ? "Working…" : "Ask copilot"}</button>{busy && <button className={control} type="button" onClick={() => { active.current?.abort(); requestId.current += 1; setBusy(false); setStatus("Stopped listening. The server run may still be processing."); }}>Stop listening</button>}<p role="status" className="text-xs text-slate-500">{status.replaceAll("_", " ")}</p></div>
-      {runId && <p className="mt-2 text-xs text-slate-500">Run {runId}</p>}
+      {runId && <div className="mt-3 flex flex-wrap items-center gap-3"><p className="text-xs text-slate-500">Run {runId}</p><button type="button" className={control} disabled={busy} onClick={checkRun}>Check run status</button></div>}
     </form>
     {error && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
     {progress.length > 0 && <details className="mt-4 text-sm text-slate-500" open={busy}><summary className="cursor-pointer font-medium">Run progress</summary><ol className="mt-2 list-inside list-decimal space-y-1">{progress.map((step, index) => <li key={`${step}-${index}`}>{step.replaceAll("_", " ")}</li>)}</ol></details>}
     {result && <div className="mt-5 border-t border-slate-200 pt-5">
       <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-slate-500"><span className="rounded-full bg-teal-50 px-3 py-1 font-medium text-teal-900">Agent: {result.route.replaceAll("_", " ")}</span><span>{Math.round(result.confidence * 100)}% confidence</span><span>{result.retries} grounding retries</span></div>
-      {result.route === "explain" && result.explanation && <p className="mb-4 text-sm leading-relaxed text-slate-700">{result.explanation}</p>}
-      {groundedClaims.length > 0 && <ul className="space-y-4">{groundedClaims.map((claim, index) => <li key={index} className="rounded-lg border border-slate-200 p-4"><p className="text-sm leading-relaxed">{claim.text}</p><div className="mt-3 flex flex-wrap gap-2">{claim.chunk_ids.map((id, sourceIndex) => { const citation = validCitations.find((item) => item.chunk_id === id)!; return <button key={id} type="button" className="rounded border border-teal-200 bg-teal-50 px-2 py-1 text-xs font-medium text-teal-900" onClick={() => onCitation(citation)} aria-label={`View source ${sourceIndex + 1} for claim ${index + 1}`}>↗ {citation.section} evidence {sourceIndex + 1}</button>; })}</div></li>)}</ul>}
+      {["explain", "update_status"].includes(result.route) && result.explanation && <p className="mb-4 text-sm leading-relaxed text-slate-700">{result.explanation}</p>}
+      {!["explain", "update_status"].includes(result.route) && !groundedClaims.length && !result.needs_confirmation && <p className="mb-4 text-sm text-slate-600">No grounded candidate claims could be verified from the available evidence.</p>}
+      {groundedClaims.length > 0 && <ul className="space-y-4">{groundedClaims.map((claim, index) => <li key={index} className="rounded-lg border border-slate-200 p-4"><p className="text-sm leading-relaxed">{claim.text}</p><div className="mt-3 flex flex-wrap gap-2">{(claim.chunk_ids ?? []).map((id, sourceIndex) => { const citation = validCitations.find((item) => item.chunk_id === id)!; return <button key={id} type="button" className="rounded border border-teal-200 bg-teal-50 px-2 py-1 text-xs font-medium text-teal-900" onClick={() => onCitation(citation)} aria-label={`View source ${sourceIndex + 1} for claim ${index + 1}`}>↗ {citation.section} evidence {sourceIndex + 1}</button>; })}</div></li>)}</ul>}
       {droppedClaims > 0 && <p className="mt-3 text-sm text-amber-800">Some claims were hidden because their resume evidence could not be resolved.</p>}
-      {result.warnings.length > 0 && <ul aria-label="Copilot warnings" className="mt-4 space-y-2 rounded-lg bg-amber-50 p-4 text-sm text-amber-900">{result.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>}
-      {result.steps.length > 0 && <details className="mt-4 text-sm text-slate-500"><summary className="cursor-pointer font-medium">Agent route and verification steps</summary><ol className="mt-2 list-inside list-decimal space-y-1">{result.steps.map((step, index) => <li key={`${step}-${index}`}>{step.replaceAll("_", " ")}</li>)}</ol></details>}
+      {warnings.length > 0 && <ul aria-label="Copilot warnings" className="mt-4 space-y-2 rounded-lg bg-amber-50 p-4 text-sm text-amber-900">{warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>}
+      {steps.length > 0 && <details className="mt-4 text-sm text-slate-500"><summary className="cursor-pointer font-medium">Agent route and verification steps</summary><ol className="mt-2 list-inside list-decimal space-y-1">{steps.map((step, index) => <li key={`${step}-${index}`}>{step.replaceAll("_", " ")}</li>)}</ol></details>}
       {result.needs_confirmation && result.proposal && <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4"><h3 className="text-sm font-semibold">Confirm the proposed status change</h3><p className="mt-2 text-sm">Set candidate {result.proposal.application_id} to <strong>{result.proposal.status}</strong>.</p><p className="mt-2 text-sm text-slate-600">{result.proposal.reason}</p><div className="mt-4 flex gap-3"><button type="button" className={primary} disabled={busy} onClick={() => confirm(true)}>Confirm status change</button><button type="button" className={control} disabled={busy} onClick={() => confirm(false)}>Cancel proposed change</button></div></div>}
     </div>}
   </div>;

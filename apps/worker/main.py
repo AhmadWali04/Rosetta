@@ -13,12 +13,12 @@ from __future__ import annotations
 import logging
 import time
 
+from copilot_runner import process_pending_copilot
+from runner import process_pending_applications
+
 from app.config import get_settings
 from app.db.session import SessionLocal
 from app.graphs.intake.graph import ensure_checkpointer_schema
-
-from copilot_runner import process_pending_copilot
-from runner import process_pending_applications
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("worker")

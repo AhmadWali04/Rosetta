@@ -22,9 +22,10 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 
-from app.db.models import Application, Event
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from app.db.models import Application, Event
 
 logger = logging.getLogger("worker")
 

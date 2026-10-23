@@ -1,4 +1,4 @@
-.PHONY: up up-offline down migrate smoke-hr pinecone-init seed reindex vector-audit \
+.PHONY: up up-offline down migrate smoke-hr smoke-copilot pinecone-init seed reindex vector-audit \
         test-api test-web lint gen-client eval eval-fast
 
 # Pass a requested audit namespace as data, never interpolate it into Python
@@ -17,12 +17,19 @@ down:
 	docker compose down
 
 migrate:
+ifeq ($(LOCAL),1)
+	cd apps/api && uv run --env-file ../../.env alembic upgrade head
+else
 	docker compose exec api uv run --no-dev alembic upgrade head
+endif
 
 # Creates, migrates, verifies and removes its own isolated local Postgres DB.
 # Uses fake LLM + memory vectors; never sends data to cloud providers.
 smoke-hr:
 	cd apps/api && uv run --env-file ../../.env python -m scripts.smoke_hr
+
+smoke-copilot:
+	cd apps/api && SKILLBRIDGE_SMOKE_COPILOT=1 uv run --env-file ../../.env python -m scripts.smoke_hr
 
 # NOTE: these run against the local `uv` env, not inside Docker, so they
 # need the root .env explicitly — Settings' default env_file=".env" would

@@ -3,6 +3,7 @@
 import asyncio
 import time
 from collections.abc import AsyncIterator
+from typing import Literal, cast
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -13,7 +14,7 @@ from app.db.copilot import CopilotRun
 from app.db.models import Application, Event, Job, _uuid
 from app.db.session import SessionLocal
 from app.graphs.state import CopilotResult
-from app.routes.copilot_schemas import CopilotEvent, CopilotRequest
+from app.routes.copilot_schemas import CopilotEvent, CopilotRequest, RunStatus
 
 SAFE_FAILURE = "Copilot analysis failed. Please try again."
 
@@ -76,12 +77,17 @@ def confirm(db: Session, run_id: str, approve: bool) -> CopilotRun:
     run = get_run(db, run_id, lock=True)
     if run.status != "awaiting_confirmation" or run.confirmation is not None:
         raise HTTPException(status_code=409, detail="run is not awaiting a new confirmation")
-    result = CopilotResult.model_validate(run.result)
+    try:
+        result = CopilotResult.model_validate(run.result)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail="run has no valid pending action") from exc
     if not result.needs_confirmation or result.proposal is None:
         raise HTTPException(status_code=409, detail="run has no action awaiting confirmation")
     proposal = result.proposal
     if proposal.application_id not in _scope_ids(db, run.job_id, run.scope):
-        raise HTTPException(status_code=409, detail="proposed candidate is outside this run's scope")
+        raise HTTPException(
+            status_code=409, detail="proposed candidate is outside this run's scope"
+        )
     run.confirmation = approve
     run.status = "queued"
     run.error = None
@@ -97,7 +103,9 @@ def confirm(db: Session, run_id: str, approve: bool) -> CopilotRun:
     return run
 
 
-def _event(run: CopilotRun, event: str) -> CopilotEvent:
+def _event(
+    run: CopilotRun, event: Literal["queued", "progress", "result", "error"]
+) -> CopilotEvent:
     # Queued/running confirmations may retain the previous interrupt result in
     # storage. Do not resend that stale proposal as a new actionable result.
     result = None
@@ -106,7 +114,7 @@ def _event(run: CopilotRun, event: str) -> CopilotEvent:
     return CopilotEvent(
         event=event,
         run_id=run.id,
-        status=run.status,
+        status=cast(RunStatus, run.status),
         result=result,
         error=run.error if event == "error" else None,
     )
@@ -128,23 +136,31 @@ async def stream_run(run_id: str) -> AsyncIterator[str]:
     previous_status = None
     first = True
     while True:
+        messages = []
+        finished = False
         with SessionLocal() as db:
             run = get_run(db, run_id)
             if first:
-                yield encode_event(_event(run, "queued"))
+                messages.append(_event(run, "queued"))
                 first = False
             if run.status in {"completed", "awaiting_confirmation"}:
-                yield encode_event(_event(run, "result"))
-                return
-            if run.status == "failed":
-                yield encode_event(_event(run, "error"))
-                return
-            if run.status != previous_status:
-                yield encode_event(_event(run, "progress"))
+                messages.append(_event(run, "result"))
+                finished = True
+            elif run.status == "failed":
+                messages.append(_event(run, "error"))
+                finished = True
+            elif run.status != previous_status:
+                messages.append(_event(run, "progress"))
                 previous_status = run.status
-            if time.monotonic() >= deadline:
+            if not finished and time.monotonic() >= deadline:
                 event = _event(run, "error")
-                event.error = "Stream timed out; the run continues. Retrieve its status to reconnect."
-                yield encode_event(event)
-                return
+                event.error = (
+                    "Stream timed out; the run continues. Retrieve its status to reconnect."
+                )
+                messages.append(event)
+                finished = True
+        for event in messages:
+            yield encode_event(event)
+        if finished:
+            return
         await asyncio.sleep(settings.copilot_stream_poll_s)

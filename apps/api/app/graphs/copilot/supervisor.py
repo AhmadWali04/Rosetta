@@ -1,4 +1,5 @@
 """Request-based routing, revisited after grounding failures."""
+
 from __future__ import annotations
 
 import asyncio
@@ -12,11 +13,16 @@ from app.prompts import load_prompt
 
 
 def supervisor(state: CopilotState) -> dict[str, Any]:
-    decision = asyncio.run(get_llm_provider().generate_structured(
-        system=load_prompt("copilot_supervisor.v1"),
-        prompt=data_block("user_request", state.message) + f"\nScope: {state.scope}\n"
-        + f"Grounding retries: {state.retries}; answer only with resolved resume citations.",
-        output_model=RouteDecision, temperature=get_settings().llm_temperature))
+    decision = asyncio.run(
+        get_llm_provider().generate_structured(
+            system=load_prompt("copilot_supervisor.v1"),
+            prompt=data_block("user_request", state.message)
+            + f"\nScope: {state.scope}\n"
+            + f"Grounding retries: {state.retries}; answer only with resolved resume citations.",
+            output_model=RouteDecision,
+            temperature=get_settings().llm_temperature,
+        )
+    )
     route = decision.route
     warnings = list(state.warnings)
     proposal = None
@@ -25,8 +31,16 @@ def supervisor(state: CopilotState) -> dict[str, Any]:
             route = "verify"
             warnings.append("Status changes require a selected candidate and an explicit label.")
         else:
-            proposal = CopilotProposal(application_id=state.scope.split(":", 1)[1],
-                                       status=decision.status,
-                                       reason="HR requested this status change through the copilot.")
-    return {"route": route, "proposal": proposal, "claims": [], "grounded": False,
-            "warnings": warnings, "steps": [*state.steps, "supervisor"]}
+            proposal = CopilotProposal(
+                application_id=state.scope.split(":", 1)[1],
+                status=decision.status,
+                reason="HR requested this status change through the copilot.",
+            )
+    return {
+        "route": route,
+        "proposal": proposal,
+        "claims": [],
+        "grounded": False,
+        "warnings": warnings,
+        "steps": [*state.steps, "supervisor"],
+    }

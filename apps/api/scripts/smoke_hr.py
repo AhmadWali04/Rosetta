@@ -262,6 +262,10 @@ def _exercise() -> None:
     print("PASS: migrations, DOCX upload, real checkpointed intake, citations, pool scoring,")
     print("      HR labels, promotion confirmation and audit (2 synthetic applications).")
     print("PASS: resume vector parity in both indexes; candidate summary parity in dense index.")
+    if os.environ.get("SKILLBRIDGE_SMOKE_COPILOT") == "1":
+        from scripts.smoke_copilot import exercise
+
+        exercise(job_id, application_ids)
 
 
 def main() -> None:
