@@ -1,4 +1,17 @@
 agents.md
-prd.md
-.env 
+PRD.md
+.env
 .claude
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Node
+node_modules/
+.next/

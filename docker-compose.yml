@@ -1,0 +1,82 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: skillbridge
+      POSTGRES_PASSWORD: skillbridge
+      POSTGRES_DB: skillbridge
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skillbridge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://skillbridge:skillbridge@db:5432/skillbridge
+      VECTOR_BACKEND: ${VECTOR_BACKEND:-memory}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./apps/api/app:/app/app
+
+  # Placeholder service for M0 — the real intake-graph worker lands in M1.
+  # Reuses the api image/build context (AGENTS.md repo layout: "worker:
+  # Background runner for intake graph (shares api package)"); the api
+  # Dockerfile's build context is apps/api/ so apps/worker/ (a sibling
+  # directory) can't be baked into that image via COPY — it's bind-mounted
+  # in instead and run with the same interpreter/deps.
+  worker:
+    build:
+      context: ./apps/api
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://skillbridge:skillbridge@db:5432/skillbridge
+      VECTOR_BACKEND: ${VECTOR_BACKEND:-memory}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./apps/worker:/worker:ro
+    command: ["uv", "run", "python", "/worker/main.py"]
+
+  web:
+    image: node:20-slim
+    working_dir: /app
+    volumes:
+      - ./apps/web:/app
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    command: sh -c "npm install && npm run dev -- -H 0.0.0.0"
+
+  # Pinecone Local (Docker emulator), only started with `make up-offline`
+  # (`docker compose --profile offline up`). Runs in "database emulator"
+  # mode (control-plane create_index/describe_index available), matching
+  # what app/rag/vector_store/pinecone_local.py assumes. Connection pattern
+  # and env vars per Pinecone's official "Local development with Pinecone
+  # Local" walkthrough.
+  pinecone-local:
+    image: ghcr.io/pinecone-io/pinecone-local:latest
+    profiles: ["offline"]
+    environment:
+      PORT: 5080
+      PINECONE_HOST: localhost
+    ports:
+      - "5080-5090:5080-5090"
+
+volumes:
+  pgdata:

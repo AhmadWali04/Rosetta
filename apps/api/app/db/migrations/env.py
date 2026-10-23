@@ -14,9 +14,8 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
-from sqlalchemy import engine_from_config, pool
-
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # Make `app` importable regardless of cwd. This file lives at
 # apps/api/app/db/migrations/env.py, so three parents up is apps/api/.

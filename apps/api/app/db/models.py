@@ -29,8 +29,8 @@ class Job(Base):
     requirements: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    applications: Mapped[list["Application"]] = relationship(back_populates="job")
-    jd_requirements: Mapped[list["JdRequirement"]] = relationship(back_populates="job")
+    applications: Mapped[list[Application]] = relationship(back_populates="job")
+    jd_requirements: Mapped[list[JdRequirement]] = relationship(back_populates="job")
 
 
 class Application(Base):
@@ -46,11 +46,11 @@ class Application(Base):
     vector_status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    job: Mapped["Job"] = relationship(back_populates="applications")
-    profile: Mapped["Profile | None"] = relationship(back_populates="application", uselist=False)
-    chunks: Mapped[list["ResumeChunk"]] = relationship(back_populates="application")
-    reviews: Mapped[list["Review"]] = relationship(back_populates="application")
-    events: Mapped[list["Event"]] = relationship(back_populates="application")
+    job: Mapped[Job] = relationship(back_populates="applications")
+    profile: Mapped[Profile | None] = relationship(back_populates="application", uselist=False)
+    chunks: Mapped[list[ResumeChunk]] = relationship(back_populates="application")
+    reviews: Mapped[list[Review]] = relationship(back_populates="application")
+    events: Mapped[list[Event]] = relationship(back_populates="application")
 
 
 class Profile(Base):
@@ -67,7 +67,7 @@ class Profile(Base):
     flags: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     explanation: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
-    application: Mapped["Application"] = relationship(back_populates="profile")
+    application: Mapped[Application] = relationship(back_populates="profile")
 
 
 class ResumeChunk(Base):
@@ -87,7 +87,7 @@ class ResumeChunk(Base):
     embed_model: Mapped[str] = mapped_column(String, nullable=False)
     indexed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    application: Mapped["Application"] = relationship(back_populates="chunks")
+    application: Mapped[Application] = relationship(back_populates="chunks")
 
 
 class JdRequirement(Base):
@@ -100,7 +100,7 @@ class JdRequirement(Base):
     weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     pinecone_id: Mapped[str] = mapped_column(String, nullable=False)
 
-    job: Mapped["Job"] = relationship(back_populates="jd_requirements")
+    job: Mapped[Job] = relationship(back_populates="jd_requirements")
 
 
 class SkillTaxonomy(Base):
@@ -141,7 +141,7 @@ class Review(Base):
     comments: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    application: Mapped["Application"] = relationship(back_populates="reviews")
+    application: Mapped[Application] = relationship(back_populates="reviews")
 
 
 class Event(Base):
@@ -159,4 +159,4 @@ class Event(Base):
     payload: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    application: Mapped["Application"] = relationship(back_populates="events")
+    application: Mapped[Application] = relationship(back_populates="events")

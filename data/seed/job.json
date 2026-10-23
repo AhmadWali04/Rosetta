@@ -55,5 +55,7 @@
       "kind": "nice_to_have",
       "weight": 0.5
     }
-  ]
+  ],
+  "_placeholder": false,
+  "_note": "Transcribed from the real, currently-live ProCogia Greenhouse posting (title, location, dates, pay, and requirements independently corroborated by two Greenhouse-sourced job-board mirrors, since job-boards.greenhouse.io itself blocks non-browser fetches and redirects to procogia.com). See data/seed/README.md for the exact sources and verification method."
 }

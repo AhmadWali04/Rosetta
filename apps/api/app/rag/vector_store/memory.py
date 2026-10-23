@@ -136,16 +136,13 @@ class MemoryVectorStore(VectorStore):
                 for idx in c.sparse_indices or []:
                     if idx not in index_order:
                         index_order[idx] = len(index_order)
-            scored = [
-                (c, _sparse_score(vector, c, index_order)) for c in candidates
-            ]
+            scored = [(c, _sparse_score(vector, c, index_order)) for c in candidates]
         else:
             scored = [(c, _cosine_similarity(vector, c.values)) for c in candidates]
 
         scored.sort(key=lambda pair: pair[1], reverse=True)
         return [
-            ScoredMatch(id=c.id, score=score, metadata=c.metadata)
-            for c, score in scored[:top_k]
+            ScoredMatch(id=c.id, score=score, metadata=c.metadata) for c, score in scored[:top_k]
         ]
 
     async def fetch(self, namespace: str, ids: list[str]) -> list[ScoredMatch]:
