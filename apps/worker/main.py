@@ -17,6 +17,7 @@ from app.config import get_settings
 from app.db.session import SessionLocal
 from app.graphs.intake.graph import ensure_checkpointer_schema
 
+from copilot_runner import process_pending_copilot
 from runner import process_pending_applications
 
 logging.basicConfig(level=logging.INFO)
@@ -24,11 +25,20 @@ logger = logging.getLogger("worker")
 
 
 def _run_once() -> None:
-    db = SessionLocal()
-    try:
-        process_pending_applications(db)
-    finally:
-        db.close()
+    # One item from each queue per iteration prevents intake batches from
+    # starving interactive Copilot requests. Each queue gets its own session
+    # and failure boundary so either remains available if its sibling fails.
+    for kind in ("copilot", "intake"):
+        db = SessionLocal()
+        try:
+            if kind == "copilot":
+                process_pending_copilot(db)
+            else:
+                process_pending_applications(db, max_applications=1)
+        except Exception:
+            logger.exception("%s queue iteration failed", kind)
+        finally:
+            db.close()
 
 
 def main() -> None:

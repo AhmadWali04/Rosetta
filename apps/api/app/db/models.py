@@ -162,3 +162,7 @@ class Event(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     application: Mapped[Application] = relationship(back_populates="events")
+
+
+# Register the separate copilot model on Base.metadata for Alembic and tests.
+from app.db import copilot as _copilot  # noqa: E402,F401

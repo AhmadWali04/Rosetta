@@ -158,6 +158,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/copilot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask */
+        post: operations["ask_copilot_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/copilot/{run_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm */
+        post: operations["confirm_copilot__run_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/copilot/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Run */
+        get: operations["get_run_copilot__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -270,6 +321,135 @@ export interface components {
             char_start: number;
             /** Char End */
             char_end: number;
+        };
+        /** CopilotCitation */
+        CopilotCitation: {
+            /** Chunk Id */
+            chunk_id: string;
+            /** Application Id */
+            application_id: string;
+            /** Text */
+            text: string;
+            /** Section */
+            section: string;
+            /** Char Start */
+            char_start: number;
+            /** Char End */
+            char_end: number;
+        };
+        /** CopilotClaim */
+        CopilotClaim: {
+            /** Text */
+            text: string;
+            /** Chunk Ids */
+            chunk_ids?: string[];
+        };
+        /** CopilotConfirmation */
+        CopilotConfirmation: {
+            /** Approve */
+            approve: boolean;
+        };
+        /** CopilotEvent */
+        CopilotEvent: {
+            /**
+             * Event
+             * @enum {string}
+             */
+            event: "queued" | "progress" | "result" | "error";
+            /** Run Id */
+            run_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "awaiting_confirmation" | "completed" | "failed";
+            result?: components["schemas"]["CopilotResult"] | null;
+            /** Error */
+            error?: string | null;
+        };
+        /** CopilotProposal */
+        CopilotProposal: {
+            /** Application Id */
+            application_id: string;
+            /** Status */
+            status: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** CopilotRequest */
+        CopilotRequest: {
+            /** Job Id */
+            job_id: string;
+            /** Scope */
+            scope: string;
+            /** Message */
+            message: string;
+        };
+        /** CopilotResult */
+        CopilotResult: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * Route
+             * @default verify
+             */
+            route: string;
+            /** Claims */
+            claims?: components["schemas"]["CopilotClaim"][];
+            /** Citations */
+            citations?: components["schemas"]["CopilotCitation"][];
+            /**
+             * Explanation
+             * @default
+             */
+            explanation: string;
+            /**
+             * Confidence
+             * @default 0
+             */
+            confidence: number;
+            /** Warnings */
+            warnings?: string[];
+            /** Steps */
+            steps?: string[];
+            /**
+             * Retries
+             * @default 0
+             */
+            retries: number;
+            /**
+             * Needs Confirmation
+             * @default false
+             */
+            needs_confirmation: boolean;
+            proposal?: components["schemas"]["CopilotProposal"] | null;
+        };
+        /** CopilotRunOut */
+        CopilotRunOut: {
+            /** Id */
+            id: string;
+            /** Job Id */
+            job_id: string;
+            /** Scope */
+            scope: string;
+            /** Message */
+            message: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "awaiting_confirmation" | "completed" | "failed";
+            result: components["schemas"]["CopilotResult"] | null;
+            /** Error */
+            error: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** EventOut */
         EventOut: {
@@ -750,6 +930,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PromotionPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ask_copilot_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-role"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopilotRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopilotEvent"];
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_copilot__run_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-role"?: string | null;
+            };
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopilotConfirmation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopilotEvent"];
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_run_copilot__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-role"?: string | null;
+            };
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopilotRunOut"];
                 };
             };
             /** @description Validation Error */

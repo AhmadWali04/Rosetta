@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../../lib/api";
 import type { components } from "../../../lib/api-types";
+import CopilotPanel from "./CopilotPanel";
 
 type Candidate = components["schemas"]["PipelineCandidate"];
 type Detail = components["schemas"]["CandidateDetail"];
@@ -49,6 +50,7 @@ export default function HrPortal() {
   const [promotionError, setPromotionError] = useState("");
   const chunkRefs = useRef<Record<string, HTMLElement | null>>({});
   const previewRequest = useRef(0);
+  const pendingCopilotCitation = useRef<{ applicationId: string; chunkId: string } | null>(null);
 
   useEffect(() => {
     let current = true;
@@ -70,10 +72,21 @@ export default function HrPortal() {
         if (!current) return;
         if (!data) throw new Error(message(error, "Could not load this candidate."));
         setDetail(data);
+        const citation = pendingCopilotCitation.current;
+        if (citation?.applicationId === data.id) {
+          if (data.chunks.some((chunk) => chunk.id === citation.chunkId)) setActiveChunk(citation.chunkId);
+          pendingCopilotCitation.current = null;
+        }
       }).catch((err: unknown) => { if (current) setDetailError(err instanceof Error ? err.message : "Could not load this candidate."); })
       .finally(() => { if (current) setDetailLoading(false); });
     return () => { current = false; };
   }, [selected, revision]);
+
+  useEffect(() => {
+    if (!activeChunk || blind) return;
+    chunkRefs.current[activeChunk]?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+    chunkRefs.current[activeChunk]?.focus({ preventScroll: true });
+  }, [activeChunk, detail, blind]);
 
   const refresh = useCallback(() => {
     setLoading(true);
@@ -160,6 +173,21 @@ export default function HrPortal() {
         <button type="button" className={control} onClick={refresh} disabled={loading || saving || promotionBusy}>Refresh pipeline</button>
       </header>
       <p className="mb-6 rounded-lg border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-950">AI recommendations support your review. Every hiring decision is made by a person. Scores use the current job pool and may change as applications are analyzed.</p>
+      <CopilotPanel
+        jobId={JOB_ID}
+        candidateId={selected}
+        blind={blind}
+        onStatusChanged={refresh}
+        onCitation={(citation) => {
+          if (blind || saving || promotionBusy) return;
+          if (detail?.id === citation.application_id) {
+            if (detail.chunks.some((chunk) => chunk.id === citation.chunk_id)) cite(citation.chunk_id);
+          } else {
+            pendingCopilotCitation.current = { applicationId: citation.application_id, chunkId: citation.chunk_id };
+            selectCandidate(citation.application_id);
+          }
+        }}
+      />
       {notice && <p role="status" className="mb-4 rounded-lg bg-emerald-100 p-3 text-sm text-emerald-900">{notice}</p>}
       <section aria-label="Pending pool promotion" className="mb-6 rounded-xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-end justify-between gap-5">

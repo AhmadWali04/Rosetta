@@ -47,7 +47,10 @@ def _default_intake_runner() -> IntakeGraphRunner:
 
 
 def process_pending_applications(
-    db: Session, run_intake_graph: IntakeGraphRunner | None = None
+    db: Session,
+    run_intake_graph: IntakeGraphRunner | None = None,
+    *,
+    max_applications: int | None = None,
 ) -> None:
     """Claims and processes every submitted application, oldest first.
 
@@ -61,15 +64,14 @@ def process_pending_applications(
     """
     runner = run_intake_graph or _default_intake_runner()
 
-    rows = (
-        db.execute(
-            select(Application)
-            .where(Application.status == "submitted")
-            .order_by(Application.created_at)
-        )
-        .scalars()
-        .all()
+    statement = (
+        select(Application)
+        .where(Application.status == "submitted")
+        .order_by(Application.created_at)
     )
+    if max_applications is not None:
+        statement = statement.limit(max_applications)
+    rows = db.execute(statement).scalars().all()
 
     for row in rows:
         row.status = "analyzing"
