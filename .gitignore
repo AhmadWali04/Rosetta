@@ -19,3 +19,6 @@ node_modules/
 # Uploaded resumes (PII) — never commit applicant files
 data/uploads/*
 !data/uploads/.gitkeep
+
+# Generated OpenAPI client intermediate (regenerate via `make gen-client`)
+apps/web/openapi.json

@@ -1,0 +1,43 @@
+JORDAN AVERY
+jordan.avery@example.com | github.com/jordanavery | Vancouver, BC
+
+SUMMARY
+Final-year Computer Science student focused on applied machine learning and
+agentic systems. Comfortable moving from a notebook prototype to a deployed,
+tested application.
+
+EXPERIENCE
+Software Engineering Intern, Northwind Analytics (May 2025 - Aug 2025)
+- Built a FastAPI backend serving a React frontend for an internal data
+  review tool, with end-to-end tests covering the API and UI.
+- Implemented a retrieval-augmented generation pipeline using LangChain and
+  a Pinecone vector index to ground chatbot answers in internal
+  documentation, with citations back to source documents.
+- Wrote and maintained the Python test suite (pytest) and used git feature
+  branches with code review for every change.
+- Containerized the service with Docker and deployed it to AWS via a small
+  CI pipeline.
+
+Teaching Assistant, Intro to Machine Learning, University of British Columbia
+(Sep 2024 - Apr 2025)
+- Debugged student code in Python, explaining version-control workflows
+  (git) and testing fundamentals to over 60 students per term.
+
+PROJECTS
+Agentic Research Assistant (personal project, 2025)
+- Designed a multi-step LangGraph agent that plans a research task, calls
+  external APIs, and self-corrects when a grounding check finds an answer
+  without a citation.
+- Evaluated the agent against a small hand-labelled benchmark, tracking
+  precision/recall of its citations before and after prompt changes.
+
+Course Project: Full-Stack Expense Tracker (2024)
+- Built the frontend in React and the backend in Node.js, with a Postgres
+  database and a REST API connecting the two.
+
+SKILLS
+Python, React, FastAPI, Node.js, LangChain, LangGraph, RAG, Pinecone,
+Docker, AWS, Git, pytest, SQL
+
+EDUCATION
+B.Sc. Computer Science, University of British Columbia, expected April 2027

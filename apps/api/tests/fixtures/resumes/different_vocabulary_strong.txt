@@ -1,0 +1,44 @@
+SAM OKAFOR
+sam.okafor@example.com | github.com/samokafor | Vancouver, BC
+
+SUMMARY
+Final-year engineering student who enjoys turning a rough idea into
+something that actually runs in production, end to end.
+
+EXPERIENCE
+Student Developer, Harborline Logistics (Co-op, Jan 2025 - Apr 2025)
+- Built automated data pipelines with Python and cloud functions to move
+  shipment records from partner systems into our internal warehouse every
+  night, replacing a manual spreadsheet process.
+- Put together a small web app where the browser-side screens (written
+  with a popular component-based JS library) talk to a Python web service
+  I wrote, so dispatchers could see pipeline status without emailing IT.
+- Hooked that Python service up to a hosted large-language-model API so
+  dispatchers could ask plain-English questions about a shipment and get
+  an answer pulled from our own documents, with a link back to the
+  original record so nobody had to take the answer on faith.
+- Wrapped the whole thing in a lightweight container so it ran the same
+  way on my laptop and on the company's cloud account, and kept every
+  change in source control with a short write-up of what changed and why.
+- Before shipping anything, I wrote a small test harness and ran it
+  against a handful of tricky example inputs to make sure a change in one
+  place didn't quietly break another.
+
+PROJECTS
+"Ask My Notes" (personal project, 2024)
+- A weekend project that lets me search my own class notes in plain
+  English instead of Ctrl+F. Splits the notes into chunks, turns each
+  chunk into a vector, stores them, and finds the closest matches to a
+  question before asking a hosted model to answer using only those
+  matches.
+- Added a self-check step: if the model's answer doesn't point back to one
+  of the chunks it was given, the tool tries again instead of showing an
+  unsupported answer.
+
+SKILLS
+Python, JavaScript (component-based UI library), cloud functions, hosted
+language-model APIs, containerized deployment, source control, automated
+testing
+
+EDUCATION
+B.Eng., expected April 2027

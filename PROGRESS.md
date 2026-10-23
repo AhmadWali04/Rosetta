@@ -2,7 +2,7 @@
 
 > Live tracker (agents.md: "Read it before starting. Update it before ending a session.")
 
-## Status: M0 — complete and verified live
+## Status: M1 — complete, backend verified live; LLM path verified via fakes only (see gaps)
 
 M0 scope (PRD §17): repo scaffold, Docker Compose, DB schema, VectorStore
 interface (memory + Pinecone Local + Pinecone), `make pinecone-init`, seed
@@ -163,24 +163,147 @@ JD + taxonomy ingestion into Pinecone.
   else on this machine expects previously-pulled images/volumes to still
   exist.
 
+## M1 — done (PRD §17: intake graph end-to-end, freshness wait,
+`vector_status` + retries, Applicant portal)
+
+Built via 6 parallel agents (A: LLM provider/parsing/injection, B: RAG
+chunking/retriever/sparse-query fix, C: deterministic intake nodes, D:
+LLM/RAG intake nodes + graph wiring, E: worker/routes/services, F: OpenAPI
+client + Applicant portal), each scoped to disjoint files, each told to
+read PRD.md/agents.md/PROGRESS.md first. Shared contracts (`config.py` new
+fields, `graphs/state.py`'s full `IntakeState`, `pyproject.toml` deps,
+`.env.example`, `docker-compose.yml` upload volume) were landed once by
+the orchestrator before fan-out, to avoid 6-way merge conflicts on the
+same files.
+
+### Done
+- `app/llm/` — provider-agnostic `LLMProvider` protocol, real `openai==3.37.0`
+  structured-output provider (`.chat.completions.parse`, verified against
+  the installed package via `inspect`, not assumed from older-version
+  docs), `AnthropicProvider` stub (deferred, no key forces it), `FakeLLMProvider`
+  for tests, `app/prompts/*.v1.md` templates.
+- `app/services/resume_parsing.py` — pdfplumber/python-docx extraction with
+  per-span hidden-text detection (`StyledSpan.is_hidden`), heuristic section
+  segmentation (heading keyword list, whole-doc fallback).
+- `app/services/injection_detection.py` — 17-pattern rule-based detector
+  (primary, deterministic) + LLM secondary check.
+- `app/rag/chunking.py`, `app/rag/retriever.py` (hybrid dense+sparse RRF
+  merge) — plus a real fix to a known M0 rough edge: added
+  `VectorStore.query_sparse()` (additive) and implemented it for `memory`
+  and the real Pinecone backends (verified sparse-query SDK payload shape:
+  `index.query(sparse_vector={"indices":[...], "values":[...]}, ...)`,
+  `vector=` omitted).
+- `app/rag/indexer.py::wait_for_freshness()` — polls `fetch`/`record_count`
+  until fresh or `vector_freshness_timeout_s` elapses; no-op for `memory`.
+- 9 intake graph nodes (`app/graphs/intake/*.py`) wired into a linear
+  `StateGraph` (`graph.py`) exactly per PRD §7.1's order, compiled with a
+  real `PostgresSaver` checkpointer (`thread_id=application_id`).
+- `apps/worker/{main.py,runner.py}` — simple polling loop (claim
+  `submitted` -> `analyzing`, run the graph, `intake_failed` + `Event` row
+  on any exception, never crashes the process), the final worker design
+  for the whole project (PRD §13 — no task queue).
+- `app/routes/{applications,jobs}.py`, `app/services/{applications,jobs}.py`
+  — `POST /applications` (multipart upload, type/size validated before
+  disk), `GET /jobs/{id}`, `GET/GET-by-id /applications`.
+- `make gen-client` real: `scripts/emit_openapi.py` -> `openapi-typescript`
+  -> `apps/web/lib/api-types.ts` (real generation, not a placeholder —
+  Agent E's routes landed in time).
+- Applicant portal (F1.1-F1.4): job page with the real seeded JD, apply
+  form with client-side validation mirroring the backend, confirmation
+  page. Plain Tailwind, no shadcn (deferred to M2 per decision below).
+- 149 backend tests + 5 frontend tests, all passing. `ruff`/`mypy` clean.
+
+### M1 decisions (same spirit as M0's log — judgment calls made, not
+asked about individually, since the user authorized "keep building")
+12. **Pragmatic section-segmentation heuristic** — heading-keyword + short-line
+    regex, whole-doc fallback when nothing matches. PRD doesn't specify exact
+    logic; this is v1, not NLP segmentation.
+13. **Injection detection**: rules-first (reliable, demo-critical) + LLM
+    secondary pass (confidence threshold 0.7, a module constant in
+    `sanitize.py` rather than `config.py` — a deliberate, flagged exception
+    to "no hardcoded thresholds," since `config.py` was frozen for the
+    parallel build). Hidden-text stripping via per-span color/hidden-flag
+    detection (PDF: near-white `non_stroking_color`/tiny font; DOCX:
+    `font.hidden`/white `RGBColor`) — catches the standard trick, not
+    every possible hiding technique.
+14. **Worker polls every 3s** (`worker_poll_interval_s`), claim-then-process
+    (sets `status="analyzing"` before running, so a crash/restart doesn't
+    reprocess). No Celery/Redis — this is the final design, not a stub.
+15. **Plain Tailwind for M1, shadcn/ui deferred to M2** — the apply form is
+    5 fields; shadcn's setup overhead is better spent once M2 needs real
+    tables/drawers/sliders.
+16. **No `/api/v1` prefix** — routes match PRD §15's literal paths.
+17. **Real `PostgresSaver` checkpointer wired now**, not a `MemorySaver`
+    stub — PRD §13 names it explicitly; no `interrupt()` calls exist yet
+    in this graph (HITL write-tools are M2/M3), so resumption semantics
+    aren't exercised yet, but the real moving part exists per the stack
+    choice.
+18. **Langfuse hook point only** — a stdout-logging LangGraph callback
+    handler stands in until M5's real Langfuse stack lands (resolves the
+    agents.md-vs-M0-decision-6 tension explicitly rather than picking a
+    side silently).
+19. **No JD-vector caching, no pool-wide min-max normalization** for
+    `semantic_similarity` — M1 processes one applicant at a time, there's
+    no pool to normalize against yet; raw cosine score used, explicitly
+    deferred to M2 when a pool exists.
+20. **Scorer's confidence formula** (PRD §9 names the *inputs*, not a
+    formula): `(citation_density + agreement) / 2`, where
+    `citation_density` = fraction of requirement matches with a real
+    resolved citation, `agreement = 1 - |must_have_coverage - semantic_similarity|`.
+21. **`depth_signal` weights** (not given numerically by PRD):
+    list_only=0.2, coursework=0.5, project=0.8, production=1.0.
+22. Three more subagent-initiated **unauthorized `git commit`s** happened
+    during this milestone's build (`ed22921` "setting up containerization",
+    `1ace4ea` "Setting up config" — on top of M0's `614c29c`). Same issue
+    as decision 10, recurring. Flagged to the user each time; feedback
+    submitted upstream about the pattern. No commits made by the
+    orchestrator without being asked.
+
+### Live verification (this session)
+- Full stack built and run via real Docker containers (not just unit
+  tests): `db` + `api` + `worker` up, `make migrate` applied cleanly,
+  `make seed` ran against real Postgres, a real `POST /applications` HTTP
+  call (multipart, the `hidden_text.docx` fixture) created a real
+  `Application` row, and the worker's poller picked it up and ran the
+  real LangGraph pipeline against it.
+- **Found and fixed a real bug this way**: `PostgresSaver.setup()`
+  (creates the checkpointer's own `checkpoints` table) was documented in
+  `graph.py` as needing a one-time call at worker startup, but nothing
+  actually called it — first graph run failed with
+  `psycopg.errors.UndefinedTable: relation "checkpoints" does not exist`.
+  Fixed by calling `ensure_checkpointer_schema()` in `apps/worker/main.py`
+  before the poll loop starts.
+- After that fix, the graph ran for real against live Postgres: `ingest_parse`
+  succeeded (real DOCX parsing), `sanitize` started and made a real
+  OpenAI API call — which confirmed the whole pipeline wiring works, but
+  then hit `openai.RateLimitError: insufficient_quota` (the user's OpenAI
+  account has no credits). This is an account/billing issue, not a code
+  bug. The error path itself worked correctly: `Application.status` ->
+  `"intake_failed"`, an `events` row written (`actor="system"`,
+  `action="intake_failed"`) — confirming invariant #4 (audit everything)
+  and the worker's crash isolation both hold under a real failure.
+- **User decision**: skip further live-LLM verification for now (unit
+  tests with `FakeLLMProvider` already cover the node logic thoroughly —
+  149 passing tests including a full fake-provider graph integration
+  test); revisit a real live run once OpenAI credits are available.
+
 ## Known gaps / next steps
 
-- ~~Alembic migration needs `alembic check`/autogenerate verification~~ —
-  done above, passes clean.
-- `VectorStore.query()`'s sparse path is a known rough edge — the abstract
-  interface's `vector: list[float]` doesn't cleanly carry a sparse query.
-  `MemoryVectorStore` makes a documented simplifying choice; the real
-  Pinecone backends raise `NotImplementedError` for a sparse-bound store's
-  `query()` since M0 never exercises that path. Revisit when M1's
-  `retriever.py` lands.
-- No live smoke test against a running Pinecone Local container or real
-  Pinecone cloud account has been performed yet (needs Docker up + the
-  user's `PINECONE_API_KEY`).
-- `scripts/seed.py` has two pre-existing minor lint issues (unsorted
-  import, one line >100 chars) — not yet fixed, should come out in the
-  `make lint` pass.
-- M1 is next: intake graph end-to-end, freshness wait, `vector_status` +
-  retries, Applicant portal (PRD §17).
+- **Live LLM path unverified** (see above) — logic is unit-tested via
+  fakes, but no real OpenAI call has completed successfully end-to-end
+  through the whole graph. Needs OpenAI credits to close this gap.
+- `jobs` table has no `location`/`employment_type`/`dates` columns — the
+  Applicant portal's job page hardcodes these three facts to match the
+  real seeded posting rather than serving them from the API. Worth adding
+  the columns + serializing them later.
+- `resume_upload_dir` (relative path, default `"data/uploads"`) resolves
+  correctly inside Docker (volume-mounted at `/app/data/uploads`) but is
+  cwd-dependent for local non-Docker dev — a known rough edge, not fixed.
+- `VectorStore.query()` (dense-shaped) now cleanly coexists with the new
+  `query_sparse()` — the M0-era rough edge is resolved.
+- M2 is next: HR portal — pipeline table, candidate drawer with
+  citations, labelling, promote-top-X% (PRD §17). This is also where
+  pool-wide score normalization and `jobs` schema additions make sense.
 
 ## Not started
 

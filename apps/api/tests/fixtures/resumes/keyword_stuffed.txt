@@ -1,0 +1,30 @@
+TAYLOR MORGAN
+taylor.morgan@example.com | Vancouver, BC
+
+SUMMARY
+Motivated student seeking AI Intern role. Python, React, Node.js, FastAPI,
+LLMs, AI agents, agentic workflows, LangChain, LangGraph, Model Context
+Protocol, retrieval-augmented generation, RAG, AI evaluation, benchmarking,
+AWS, GCP, Azure, Docker, containerization, git, debugging, testing,
+version control, full-stack, frontend, backend, APIs, open-source LLMs.
+
+EXPERIENCE
+Student, Some University (2023 - present)
+- Took classes.
+- Studied Python, React, Node.js, FastAPI, LLMs, AI agents, agentic
+  workflows, LangChain, LangGraph, Model Context Protocol,
+  retrieval-augmented generation, RAG, AI evaluation, benchmarking, AWS,
+  GCP, Azure, Docker, containerization, git, debugging, testing, version
+  control, full-stack, frontend, backend, APIs, and open-source LLMs.
+
+SKILLS
+Python, React, Node.js, FastAPI, LLMs, AI agents, agentic workflows,
+LangChain, LangGraph, Model Context Protocol, retrieval-augmented
+generation, RAG, AI evaluation, benchmarking, AWS, GCP, Azure, Docker,
+containerization, git, debugging, testing, version control, full-stack,
+frontend, backend, APIs, open-source LLMs, machine learning, deep learning,
+computer vision, NLP, data science, cloud computing, microservices,
+Kubernetes, CI/CD, agile, scrum, leadership, communication, teamwork.
+
+EDUCATION
+Some University, expected 2027

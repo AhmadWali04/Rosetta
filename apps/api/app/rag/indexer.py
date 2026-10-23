@@ -25,15 +25,23 @@ comparison primitive: hand it the IDs Postgres thinks should exist for a
 namespace, and it reports what Pinecone is missing or holds that it
 shouldn't (orphans), split out per dense/sparse index since the two can
 drift independently.
+
+`wait_for_freshness()` (M1, PRD §8.6) is the freshness-poll primitive the
+Chunk & Index node uses right after upserting: Pinecone serverless is
+eventually consistent, so a just-upserted record may not be immediately
+queryable. This function only reports success/failure honestly — deciding
+what to do on a `False` (fall back to in-state chunk data, flag the run)
+is the Chunk & Index node's job, not this module's (PRD §8.6).
 """
 
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import Any
 
 from app.config import get_settings
-from app.rag.vector_store import get_vector_store
+from app.rag.vector_store import VectorStore, get_vector_store
 from app.rag.vector_store.admin import ensure_serverless_indexes
 
 
@@ -90,3 +98,87 @@ async def audit_namespace(namespace: str, expected_ids: list[str]) -> dict[str, 
         "missing_sparse": missing_sparse,
         "parity": not missing and not orphaned,
     }
+
+
+async def wait_for_freshness(
+    namespace: str,
+    expected_record_count: int | None = None,
+    last_upserted_id: str | None = None,
+    timeout_s: float | None = None,
+    *,
+    poll_interval_s: float = 0.5,
+) -> bool:
+    """Poll the dense and sparse `VectorStore`s until newly-upserted records
+    are visible, or `timeout_s` elapses (PRD §8.6).
+
+    No-op, returns `True` immediately for `VECTOR_BACKEND=memory` — the
+    in-memory backend is synchronous (upsert completes before this is ever
+    called), so nothing is ever "not fresh" there (PRD §8.8).
+
+    Precision order when both are given, or when only one is given:
+    - `last_upserted_id` (preferred when present): poll via
+      `fetch(namespace, [last_upserted_id])` on BOTH stores — more precise
+      than a count, since a namespace can hold pre-existing records, which
+      would make a bare count check pass or fail for the wrong reason.
+    - `expected_record_count` (fallback, used when `last_upserted_id` is
+      not given): poll via `record_count(namespace) >= expected_record_count`
+      on BOTH stores.
+    At least one of the two must be given, or there is nothing to poll for.
+
+    Returns `True` once fresh, `False` on timeout. This function only
+    reports success/failure honestly — it is the CALLER's job (the Chunk &
+    Index node, PRD §8.6) to decide what to do with `False` (fall back to
+    in-state chunk data and flag the run; not this function's concern).
+
+    `poll_interval_s` (default 0.5s, per PRD §8.6's "polls... every) is a
+    keyword-only seam for tests that want to exercise the polling loop
+    without waiting on the real default cadence/timeout; production
+    callers should leave it at the default.
+    """
+    if last_upserted_id is None and expected_record_count is None:
+        raise ValueError(
+            "wait_for_freshness requires at least one of expected_record_count or last_upserted_id"
+        )
+
+    settings = get_settings()
+    if settings.vector_backend == "memory":
+        return True
+
+    effective_timeout = timeout_s if timeout_s is not None else settings.vector_freshness_timeout_s
+    dense_store = get_vector_store("dense")
+    sparse_store = get_vector_store("sparse")
+
+    deadline = time.monotonic() + effective_timeout
+    while True:
+        if await _namespace_is_fresh(
+            dense_store, sparse_store, namespace, expected_record_count, last_upserted_id
+        ):
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        await asyncio.sleep(poll_interval_s)
+
+
+async def _namespace_is_fresh(
+    dense_store: VectorStore,
+    sparse_store: VectorStore,
+    namespace: str,
+    expected_record_count: int | None,
+    last_upserted_id: str | None,
+) -> bool:
+    """One freshness check, per the precision order documented on
+    `wait_for_freshness`: prefer fetching `last_upserted_id` when given,
+    else fall back to a record-count comparison."""
+    if last_upserted_id is not None:
+        dense_hit, sparse_hit = await asyncio.gather(
+            dense_store.fetch(namespace, [last_upserted_id]),
+            sparse_store.fetch(namespace, [last_upserted_id]),
+        )
+        return bool(dense_hit) and bool(sparse_hit)
+
+    assert expected_record_count is not None  # guaranteed by the caller's upfront check
+    dense_count, sparse_count = await asyncio.gather(
+        dense_store.record_count(namespace),
+        sparse_store.record_count(namespace),
+    )
+    return dense_count >= expected_record_count and sparse_count >= expected_record_count

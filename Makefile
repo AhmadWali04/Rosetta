@@ -44,13 +44,16 @@ test-api:
 lint:
 	cd apps/api && uv run ruff check . && uv run ruff format --check . && uv run mypy
 
-# --- Deferred past M0 (stub targets) -----------------------------------
+# --- M1: real targets ---------------------------------------------------
 
 gen-client:
-	@echo "not implemented until M1/M2 (needs an OpenAPI-emitting API)"
+	cd apps/api && uv run --no-dev python scripts/emit_openapi.py > ../web/openapi.json
+	cd apps/web && npx openapi-typescript openapi.json -o lib/api-types.ts
 
 test-web:
-	@echo "not implemented until M1 (apps/web has no tests yet)"
+	cd apps/web && npm run test
+
+# --- Deferred past M1 (stub targets) -------------------------------------
 
 eval:
 	@echo "not implemented until M5 (eval harness)"

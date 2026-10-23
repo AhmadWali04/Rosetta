@@ -109,3 +109,81 @@ async def test_namespaces_are_isolated() -> None:
 
     assert await store.list_ids("dev-ns-1") == ["a"]
     assert await store.list_ids("dev-ns-2") == ["b"]
+
+
+# -- query_sparse (M1, replaces the old query()-on-sparse-records hack) -----
+
+
+@pytest.mark.asyncio
+async def test_query_sparse_ranks_by_real_dot_product() -> None:
+    store = MemoryVectorStore()
+    records = [
+        # "a" shares weight on index 1 with the query -> highest dot product.
+        VectorRecord(id="a", values=[], sparse_indices=[1, 2], sparse_values=[0.9, 0.1]),
+        # "b" shares a smaller overlapping weight on index 1.
+        VectorRecord(id="b", values=[], sparse_indices=[1, 3], sparse_values=[0.2, 0.5]),
+        # "c" shares no indices with the query at all -> score 0.
+        VectorRecord(id="c", values=[], sparse_indices=[5, 6], sparse_values=[1.0, 1.0]),
+    ]
+    await store.upsert(NAMESPACE, records)
+
+    # Query vector: index 1 -> 1.0 (dominant), index 2 -> 0.1.
+    results = await store.query_sparse(NAMESPACE, indices=[1, 2], values=[1.0, 0.1], top_k=3)
+
+    assert [r.id for r in results] == ["a", "b", "c"]
+    # a: 1.0*0.9 + 0.1*0.1 = 0.91; b: 1.0*0.2 = 0.2; c: 0.0
+    assert results[0].score == pytest.approx(0.91)
+    assert results[1].score == pytest.approx(0.2)
+    assert results[2].score == pytest.approx(0.0)
+
+
+@pytest.mark.asyncio
+async def test_query_sparse_applies_eq_metadata_filter() -> None:
+    store = MemoryVectorStore()
+    records = [
+        VectorRecord(
+            id="a",
+            values=[],
+            sparse_indices=[1],
+            sparse_values=[1.0],
+            metadata={"application_id": "app_1"},
+        ),
+        VectorRecord(
+            id="b",
+            values=[],
+            sparse_indices=[1],
+            sparse_values=[1.0],
+            metadata={"application_id": "app_2"},
+        ),
+    ]
+    await store.upsert(NAMESPACE, records)
+
+    results = await store.query_sparse(
+        NAMESPACE,
+        indices=[1],
+        values=[1.0],
+        top_k=10,
+        filter={"application_id": {"$eq": "app_2"}},
+    )
+
+    assert {r.id for r in results} == {"b"}
+
+
+@pytest.mark.asyncio
+async def test_query_raises_not_implemented_for_sparse_shaped_namespace() -> None:
+    """query() stays dense-only (M1 fix) — a sparse-shaped namespace must
+    be queried with query_sparse() instead."""
+    store = MemoryVectorStore()
+    await store.upsert(
+        NAMESPACE, [VectorRecord(id="a", values=[], sparse_indices=[1], sparse_values=[1.0])]
+    )
+
+    with pytest.raises(NotImplementedError):
+        await store.query(NAMESPACE, vector=[1.0], top_k=1)
+
+
+@pytest.mark.asyncio
+async def test_query_sparse_returns_empty_list_for_unknown_namespace() -> None:
+    store = MemoryVectorStore()
+    results = await store.query_sparse(NAMESPACE, indices=[1], values=[1.0], top_k=5)
+    assert results == []

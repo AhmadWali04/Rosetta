@@ -59,7 +59,37 @@ class VectorStore(ABC):
         top_k: int,
         filter: dict[str, Any] | None = None,
     ) -> list[ScoredMatch]:
-        """Query with an optional metadata filter, e.g. {"application_id": {"$eq": "a_123"}}."""
+        """The DENSE-only query path: `vector` is one dense embedding (one
+        float per embedding dimension). Query with an optional metadata
+        filter, e.g. {"application_id": {"$eq": "a_123"}}.
+
+        This signature has no clean way to carry a SPARSE query (parallel
+        index/value arrays over a huge vocabulary) — use `query_sparse`
+        instead for that. A store bound to a sparse-shaped index/namespace
+        may raise `NotImplementedError` here pointing at `query_sparse`
+        rather than trying to misuse this signature (see each
+        implementation's docstring for whether it does).
+        """
+
+    @abstractmethod
+    async def query_sparse(
+        self,
+        namespace: str,
+        indices: list[int],
+        values: list[float],
+        top_k: int,
+        filter: dict[str, Any] | None = None,
+    ) -> list[ScoredMatch]:
+        """The real SPARSE-query path (PRD §8.4, `app/rag/retriever.py`).
+
+        `indices`/`values` are the query's sparse vector as parallel arrays
+        (vocabulary index -> weight), matching the shape of
+        `VectorRecord.sparse_indices`/`sparse_values` and
+        `app.rag.embeddings.SparseVector`. This is the counterpart to
+        `query()` for stores bound to a sparse index; `query()` stays
+        dense-only (see its docstring) rather than trying to overload one
+        method signature for both vector shapes.
+        """
 
     @abstractmethod
     async def fetch(self, namespace: str, ids: list[str]) -> list[ScoredMatch]:

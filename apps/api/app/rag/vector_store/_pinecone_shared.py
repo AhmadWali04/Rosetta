@@ -4,7 +4,7 @@ handle, used by both `pinecone_local.py` (Docker emulator) and
 the `pinecone.Pinecone` client and resolve an `Index` handle (local: by
 `host`, no auth; cloud: by API key, resolved via the control plane) — every
 other behaviour (batching/retry on upsert, dense-vs-sparse payload shaping,
-query, fetch, delete-by-prefix, list, record_count) is identical, so it
+query, query_sparse, fetch, delete-by-prefix, list, record_count) is identical, so it
 lives here once instead of being duplicated and risking drift between the
 two files.
 
@@ -138,24 +138,15 @@ class PineconeSDKVectorStore(VectorStore):
         filter: dict[str, Any] | None = None,
     ) -> list[ScoredMatch]:
         if self._vector_type == "sparse":
-            # KNOWN ROUGH EDGE, documented rather than silently guessed at:
-            # the abstract `VectorStore.query(vector: list[float], ...)`
-            # signature is dense-shaped and has no clean way to carry a
-            # sparse query (indices + weights). Pinecone's real sparse
-            # query needs `sparse_vector={"indices": [...], "values": [...]}`
-            # passed to `index.query()`, not a flat `vector=`. M0's only
-            # exercised vector-store path is seed ingestion's upsert-only
-            # flow into the taxonomy/JD namespaces (PRD §17 M0) — nothing in
-            # M0 queries a sparse-index-bound store. Revisit this when
-            # `app/rag/retriever.py` lands in M1 and needs real hybrid
-            # (dense + sparse) queries, most likely by giving the
-            # `VectorStore` interface a richer query-vector type instead of
-            # a bare `list[float]`.
+            # `query()` stays dense-only (see base.py's docstring): the
+            # abstract `vector: list[float]` signature has no clean way to
+            # carry a sparse query. M1 lands the real sparse path as
+            # `query_sparse()` below — use that for a sparse-index-bound
+            # store instead of calling this method.
             raise NotImplementedError(
                 "Sparse-index query() has no faithful representation through "
-                "VectorStore.query(vector: list[float]) in M0 - this store is "
-                "bound to a sparse index. Revisit when app/rag/retriever.py "
-                "lands in M1 (see _pinecone_shared.py docstring)."
+                "VectorStore.query(vector: list[float]) - this store is bound "
+                "to a sparse index. Use query_sparse() instead (see base.py)."
             )
 
         index = await self._get_index()
@@ -163,6 +154,49 @@ class PineconeSDKVectorStore(VectorStore):
             index.query,
             namespace=namespace,
             vector=vector,
+            top_k=top_k,
+            filter=filter,
+            include_metadata=True,
+        )
+        return [
+            ScoredMatch(id=match.id, score=match.score, metadata=dict(match.metadata or {}))
+            for match in response.matches
+        ]
+
+    async def query_sparse(
+        self,
+        namespace: str,
+        indices: list[int],
+        values: list[float],
+        top_k: int,
+        filter: dict[str, Any] | None = None,
+    ) -> list[ScoredMatch]:
+        """Real sparse query via the Pinecone SDK's `sparse_vector=` kwarg.
+
+        Call shape VERIFIED against the installed SDK (`pinecone==10.1.0`,
+        `inspect.signature(pinecone.Index.query)` and
+        `inspect.getsource(pinecone.index.__init__.query)`): `Index.query()`
+        accepts `sparse_vector: SparseValues | Mapping[str, Any] | None`,
+        and the method's own docstring example passes a plain dict —
+        `sparse_vector={"indices": [17, 42, 108], "values": [0.4, 0.9, 0.2]}`
+        — so a plain `{"indices": [...], "values": [...]}` mapping (no
+        `SparseValues` import needed) is confirmed to work, matching the
+        same nested shape `_to_upsert_payload()` already uses for
+        `sparse_values` on upsert. `vector=` is simply omitted for a
+        sparse-only index query, per the same docstring
+        ("omit for sparse-only indexes (use *sparse_vector* instead)").
+        """
+        if self._vector_type == "dense":
+            raise NotImplementedError(
+                "query_sparse() was called on a dense-index-bound store; use "
+                "query() instead for dense vectors."
+            )
+
+        index = await self._get_index()
+        response = await asyncio.to_thread(
+            index.query,
+            namespace=namespace,
+            sparse_vector={"indices": indices, "values": values},
             top_k=top_k,
             filter=filter,
             include_metadata=True,
