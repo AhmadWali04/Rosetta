@@ -13,13 +13,17 @@ down:
 	docker compose down
 
 migrate:
-	docker compose exec api uv run alembic upgrade head
+	docker compose exec api uv run --no-dev alembic upgrade head
 
+# NOTE: these run against the local `uv` env, not inside Docker, so they
+# need the root .env explicitly — Settings' default env_file=".env" would
+# otherwise resolve relative to apps/api/ (which has no .env of its own)
+# since `cd apps/api` changes cwd before uv runs.
 pinecone-init:
-	cd apps/api && uv run python scripts/pinecone_init.py
+	cd apps/api && uv run --env-file ../../.env python scripts/pinecone_init.py
 
 seed:
-	cd apps/api && uv run python -m scripts.seed
+	cd apps/api && uv run --env-file ../../.env python -m scripts.seed
 
 reindex:
 	@echo "make reindex is a stretch target not required for M0 acceptance;"
@@ -29,7 +33,7 @@ reindex:
 vector-audit:
 	@echo "NOTE: M0 wiring only — expected_ids isn't pulled from Postgres yet,"
 	@echo "so 'orphaned' below lists everything Pinecone holds for this namespace."
-	cd apps/api && uv run python -c "\
+	cd apps/api && uv run --env-file ../../.env python -c "\
 	import asyncio; \
 	from app.rag.indexer import audit_namespace; \
 	print(asyncio.run(audit_namespace('$(NS)', [])))"

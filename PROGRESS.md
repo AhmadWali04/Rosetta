@@ -2,7 +2,7 @@
 
 > Live tracker (agents.md: "Read it before starting. Update it before ending a session.")
 
-## Status: M0 — built, verification in progress
+## Status: M0 — complete and verified live
 
 M0 scope (PRD §17): repo scaffold, Docker Compose, DB schema, VectorStore
 interface (memory + Pinecone Local + Pinecone), `make pinecone-init`, seed
@@ -112,11 +112,61 @@ JD + taxonomy ingestion into Pinecone.
     kept since it was correct. Flagged because it's scope creep beyond what
     was delegated.
 
+## Live verification (this session, after M0 "done")
+
+- Fixed a real port collision: the host already runs a native/Homebrew
+  Postgres on 5432. `docker-compose.yml`'s `db` service now publishes
+  **5433** on the host (container-internal port is still 5432; `api`/
+  `worker` reach it as `db:5432` over the compose network, unaffected).
+  `.env.example`'s `DATABASE_URL` updated to match.
+  symptom seen before the fix: alembic connected to the *native* Postgres
+  (role `skillbridge` doesn't exist there), not the container — classic
+  "it looks like it's hitting Docker but isn't" bug.
+- `alembic check` passes — the hand-written migration matches
+  `app/db/models.py` exactly, autogenerate detects zero drift.
+- Full reseed-twice idempotency check against the live container: row
+  counts (1 job, 10 requirements, 170 skills) identical before/after a
+  second `make seed` run.
+- `docker compose build api` / `up -d db api worker` all work; `GET
+  /health` returns `{"status":"ok"}`; worker placeholder runs and exits 0.
+- Fixed a real inefficiency found during verification: the `api`/`worker`
+  containers were re-downloading the dev dependency group (ruff, mypy,
+  pytest — ~25MB) on *every* container start, because `uv run` without
+  `--no-dev` re-resolves all groups at runtime even though the image was
+  built with `--no-dev`. Fixed by adding `--no-dev` to the Dockerfile's
+  `CMD` and the worker's `command:` in `docker-compose.yml`. Also added
+  `COPY alembic.ini` and `COPY scripts/` to the Dockerfile — they were
+  missing, which would've broken `docker compose exec api alembic ...`
+  (`make migrate`) the first time anyone actually ran it.
+- **Real Pinecone cloud verified end-to-end**: `make pinecone-init` created
+  `skillbridge-dense` and `skillbridge-sparse` for real (serverless, AWS
+  us-east-1) and is idempotent (second run reports `already_existed` for
+  both). `make seed` run against `VECTOR_BACKEND=pinecone` committed to
+  live Postgres AND upserted into real Pinecone; `record_count()` on both
+  indexes confirms 170/170 (dense/sparse) in `dev-taxonomy` and 10/10 in
+  `dev-jd-job-ai-intern-procogia` after a freshness wait. **These two
+  indexes and namespaces now exist for real in the user's Pinecone
+  account** — not just locally/in-memory.
+- Fixed a second real bug: `pinecone-init`/`seed`/`vector-audit` Makefile
+  targets run via the local `uv` env (not Docker), but `cd apps/api` before
+  `uv run` meant `Settings`' default `env_file=".env"` resolved to
+  `apps/api/.env` (doesn't exist), not the root `.env` with the real keys.
+  Fixed with `uv run --env-file ../../.env ...` in those targets.
+- Disk filled up completely mid-session (blocked Docker and even this
+  session's own tool output) and separately corrupted Docker Desktop's VM
+  storage (containers failed with `exec format error` even on a freshly
+  pulled, architecture-matching image). Fixed with the user's explicit
+  go-ahead by deleting Docker Desktop's VM disk
+  (`~/Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw`)
+  and letting it rebuild — this wipes **all** local Docker state on the
+  machine, not just this project's, so it's noted here in case anything
+  else on this machine expects previously-pulled images/volumes to still
+  exist.
+
 ## Known gaps / next steps
 
-- Alembic migration needs `alembic check`/autogenerate verification once
-  `uv sync` has actually been run against a live Postgres (should be done
-  as part of this session's verification pass).
+- ~~Alembic migration needs `alembic check`/autogenerate verification~~ —
+  done above, passes clean.
 - `VectorStore.query()`'s sparse path is a known rough edge — the abstract
   interface's `vector: list[float]` doesn't cleanly carry a sparse query.
   `MemoryVectorStore` makes a documented simplifying choice; the real

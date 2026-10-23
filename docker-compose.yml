@@ -5,8 +5,12 @@ services:
       POSTGRES_USER: skillbridge
       POSTGRES_PASSWORD: skillbridge
       POSTGRES_DB: skillbridge
+    # Host port 5433, not 5432 — avoids colliding with a native/Homebrew
+    # Postgres that may already be listening on 5432 on the host. The
+    # container's own port stays 5432; api/worker reach it as db:5432 over
+    # the compose network, unaffected by this host-side remap.
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -30,13 +34,15 @@ services:
         condition: service_healthy
     volumes:
       - ./apps/api/app:/app/app
+      - ./data/uploads:/app/data/uploads
 
-  # Placeholder service for M0 — the real intake-graph worker lands in M1.
-  # Reuses the api image/build context (AGENTS.md repo layout: "worker:
-  # Background runner for intake graph (shares api package)"); the api
-  # Dockerfile's build context is apps/api/ so apps/worker/ (a sibling
-  # directory) can't be baked into that image via COPY — it's bind-mounted
-  # in instead and run with the same interpreter/deps.
+  # Background intake-graph worker (M1). Reuses the api image/build context
+  # (AGENTS.md repo layout: "worker: Background runner for intake graph
+  # (shares api package)"); the api Dockerfile's build context is apps/api/
+  # so apps/worker/ (a sibling directory) can't be baked into that image via
+  # COPY — it's bind-mounted in instead and run with the same interpreter/
+  # deps. PYTHONPATH=/app so `apps/worker/main.py` (run as a bare script,
+  # outside the installed `app` package) can still `import app...`.
   worker:
     build:
       context: ./apps/api
@@ -45,12 +51,14 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://skillbridge:skillbridge@db:5432/skillbridge
       VECTOR_BACKEND: ${VECTOR_BACKEND:-memory}
+      PYTHONPATH: /app
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./apps/worker:/worker:ro
-    command: ["uv", "run", "python", "/worker/main.py"]
+      - ./data/uploads:/app/data/uploads
+    command: ["uv", "run", "--no-dev", "python", "/worker/main.py"]
 
   web:
     image: node:20-slim

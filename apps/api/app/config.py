@@ -42,9 +42,14 @@ class Settings(BaseSettings):
     llm_provider: LLMProvider = "openai"
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
+    openai_model: str = "gpt-4o-mini"
+    anthropic_model: str | None = None
+    llm_temperature: float = 0.0
 
-    # Relational DB
-    database_url: str = "postgresql+psycopg://skillbridge:skillbridge@localhost:5432/skillbridge"
+    # Relational DB. Host port is 5433 locally (docker-compose.yml maps
+    # 5433->5432 to avoid colliding with a native/Homebrew Postgres that may
+    # already own 5432 on the host); containers reach it as db:5432 instead.
+    database_url: str = "postgresql+psycopg://skillbridge:skillbridge@localhost:5433/skillbridge"
 
     # Langfuse
     langfuse_public_key: str | None = None
@@ -79,6 +84,23 @@ class Settings(BaseSettings):
     # Upsert batching (AGENTS.md "Pinecone rules")
     pinecone_upsert_batch_size: int = 100
     pinecone_upsert_max_retries: int = 3
+
+    # Hybrid retrieval (PRD §8.4, M1 app/rag/retriever.py)
+    rrf_k: int = 60
+    retriever_top_k: int = 20
+    retriever_final_k: int = 5
+
+    # Intake worker (PRD §13 — a simple poller, deliberately not a task
+    # queue; see PROGRESS.md decisions)
+    worker_poll_interval_s: float = 3.0
+
+    # Applicant upload (PRD F1.2)
+    resume_upload_max_mb: float = 5.0
+    resume_upload_dir: str = "data/uploads"
+
+    # CORS — the Next.js dev origin needs to call the API directly (no
+    # Next.js server-side proxy in M1)
+    cors_allow_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
 
 @lru_cache

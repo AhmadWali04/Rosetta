@@ -15,3 +15,7 @@ __pycache__/
 # Node
 node_modules/
 .next/
+
+# Uploaded resumes (PII) — never commit applicant files
+data/uploads/*
+!data/uploads/.gitkeep
