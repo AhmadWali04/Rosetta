@@ -16,9 +16,11 @@ def recompute_pool(db: Session, job_id: str, settings: Settings) -> None:
     serializes pool changes without allowing an intake to undo a human label.
     Profiles predating component persistence retain their existing scores.
     """
-    job = db.scalar(select(Job).where(Job.id == job_id).with_for_update())
+    with db.no_autoflush:
+        job = db.scalar(select(Job).where(Job.id == job_id).with_for_update())
     if job is None:
         raise ValueError(f"cannot rescore unknown job {job_id!r}")
+    db.flush()
     profiles = list(
         db.scalars(
             select(Profile)

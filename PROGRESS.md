@@ -2,7 +2,7 @@
 
 > Live tracker (agents.md: "Read it before starting. Update it before ending a session.")
 
-## Status: M2 — HR workflow implemented; automated checks and existing-DB startup verified; acceptance gaps below
+## Status: M2 — HR workflows and pool scoring verified, including clean-DB offline acceptance; UI stack deviations remain
 
 M0 scope (PRD §17): repo scaffold, Docker Compose, DB schema, VectorStore
 interface (memory + Pinecone Local + Pinecone), `make pinecone-init`, seed
@@ -362,8 +362,10 @@ asked about individually, since the user authorized "keep building")
 - No vectors are written/deleted by this feature, so vector parity is
   unchanged. No real LLM requests, cloud seed/reindex operations, new
   dependencies, migrations, or commits were initiated by this work.
-- Clean-DB reseed and a browser-driven full HR workflow with a completed live
-  intake remain unverified. Current stored demo applicants have failed intake
+- Initial verification did not cover a clean DB; the follow-up smoke below
+  now verifies isolated migrations and the real fake-provider intake/HR path.
+  Browser-driven full HR review with a completed live-model intake remains
+  unverified. Current stored demo applicants have failed intake
   due to the previously recorded OpenAI credits issue. Fake-provider and
   in-memory DB regression coverage verifies review behavior independently.
 - Explicit deviations retained: `/hr/applications` adds a separate HR read
@@ -371,8 +373,9 @@ asked about individually, since the user authorized "keep building")
   Tailwind controls and a sanitized chunk text viewer are used because
   shadcn/react-pdf are not installed and new dependencies need approval.
   Full shadcn and PDF-viewer adoption remains outstanding.
-- F2.3 Recruiter Copilot remains M3 scope. Do not advance to M3 until M2's
-  outstanding scoring/acceptance checks above are resolved.
+- F2.3 Recruiter Copilot remains M3 scope. M2's core workflow/scoring acceptance
+  now passes offline; shadcn/PDF viewer stack adoption remains an explicit
+  implementation deviation rather than a completed requirement.
 
 ### M2 scoring follow-up — 2026-10-23
 
@@ -400,7 +403,64 @@ asked about individually, since the user authorized "keep building")
 - New regressions cover normalization, pool/job isolation, ties/missing data,
   configurable guardrails, reruns, audit idempotency, preserved decisions and
   rollback. Added `make smoke-hr` for isolated Postgres acceptance using fake
-  LLMs and memory vectors; final smoke/check results recorded below once run.
+  LLMs and memory vectors.
+- Final verification: `make lint` passes including frontend checks,
+  `make test-api` passes 209 tests, `make test-web` passes 13 tests, and
+  `make smoke-hr` passes. The smoke creates a separate UUID-named local DB,
+  migrates 0001+0002 and verifies zero schema drift, submits two synthetic
+  DOCX resumes through HTTP, runs real parsing/chunking/hybrid retrieval and
+  Postgres-checkpointed intake, validates citations and scoring components,
+  preserves HR labels during rescoring, and confirms promotion/audit/role
+  guards. External HTTP transports are blocked, and the temporary database
+  and uploaded fixtures are removed afterward. Existing databases and cloud
+  indexes are untouched by the smoke.
+- Smoke parity checks explicitly verify both resume indexes against IDs
+  hydrated from Postgres and dense summary IDs. Discovered pre-existing RAG
+  gaps: summaries currently exist only in dense, and `audit_namespace`'s
+  parity flag checked the union, so a record absent from just one index could
+  be incorrectly reported as parity. The audit follow-up below fixes that
+  defect with explicit per-index expectations. Sparse summary indexing
+  remains outside the current dense-similarity design.
+- Legacy aggregate-only profiles are deliberately not backfilled with invented
+  signals. An explicit intake rerun is needed to rescore them. There are no
+  completed profiles in the current live demo DB requiring such a rerun.
+- Concurrent row locking is implemented in the same job-first order for HR
+  and intake writes; automated SQLite tests verify atomic rollback, while a
+  multi-session Postgres concurrency stress test has not been run.
+- Rebuilt API/worker with the final scoring code using `make up`; startup
+  succeeded. Existing demo data and human decisions were retained.
+
+### Read-only vector audit follow-up — 2026-10-23
+
+- Fixed `audit_namespace` to detect missing/orphaned records independently
+  in dense and sparse indexes. `expected_sparse_ids=None` requires the same
+  IDs in both; explicit `[]` documents the current dense-only summary policy.
+  One-sided loss can no longer report parity.
+- Replaced `make vector-audit`'s empty-expected-ID placeholder with a service
+  that hydrates taxonomy, JD, resume and summary expectations from Postgres.
+  All known namespaces in the configured environment are audited by default;
+  `NS` selects one exact known namespace, passed as environment data without
+  interpolation into shell/Python source. Unknown namespaces/environments
+  are rejected. It reports JSON and exits 0 for parity, 1 for drift, 2 for
+  errors. No embeddings, vector writes, migrations or commits occur.
+- Summary expectations include only applications with persisted chunks.
+  Candidate namespaces explicitly require dense summary IDs and no sparse
+  summaries. This makes the existing storage policy auditable without
+  pretending that those summaries exist in both indexes.
+- Added 20 regression cases across primitive parity and Postgres-derived
+  audits/CLI. `make lint` passes; `make test-api` passes 229 tests.
+  `make smoke-hr` passes with real isolated Postgres, two nonempty synthetic
+  intakes and Postgres-derived resume/summary audit assertions. A read-only
+  `make vector-audit NS=dev-resumes-job-ai-intern-procogia VECTOR_BACKEND=memory`
+  CLI check passes against the current empty resume namespace; this is not
+  evidence of cloud parity. No live cloud calls were made.
+- User requested a reduced-scope continuation with parallel subagents.
+  Re-read AGENTS/PRD/PROGRESS and searched for alternate scoped files: current
+  PRD edits are whitespace-only, and PRD/PROGRESS still specify M3–M6 in full.
+  Asked which features were cut or whether revised files are unsaved; awaiting
+  clarification before starting product features that may be out of scope.
+  Three subagents handled the audit primitive, operational command/tests,
+  and independent scope/correctness review in separate ownership scopes.
 
 ## Not started
 

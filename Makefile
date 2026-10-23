@@ -1,6 +1,10 @@
 .PHONY: up up-offline down migrate smoke-hr pinecone-init seed reindex vector-audit \
         test-api test-web lint gen-client eval eval-fast
 
+# Pass a requested audit namespace as data, never interpolate it into Python
+# or shell source. An empty NS audits every known namespace in the active env.
+export NS
+
 # --- M0: real targets -------------------------------------------------
 
 up:
@@ -36,12 +40,7 @@ reindex:
 	@echo "'make seed' (JD + taxonomy) to rebuild those two namespaces."
 
 vector-audit:
-	@echo "NOTE: M0 wiring only — expected_ids isn't pulled from Postgres yet,"
-	@echo "so 'orphaned' below lists everything Pinecone holds for this namespace."
-	cd apps/api && uv run --env-file ../../.env python -c "\
-	import asyncio; \
-	from app.rag.indexer import audit_namespace; \
-	print(asyncio.run(audit_namespace('$(NS)', [])))"
+	cd apps/api && uv run --env-file ../../.env python -m scripts.vector_audit
 
 test-api:
 	cd apps/api && uv run pytest tests/ -v

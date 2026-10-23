@@ -130,3 +130,94 @@ async def test_times_out_and_returns_false_when_never_fresh(monkeypatch: Any) ->
     )
 
     assert result is False
+
+
+class _AuditStore:
+    def __init__(self, ids: list[str]) -> None:
+        self.ids = ids
+
+    async def list_ids(self, namespace: str) -> list[str]:
+        assert namespace == "dev-audit"
+        return list(self.ids)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "dense,sparse,missing_dense,missing_sparse",
+    [
+        (["record"], [], [], ["record"]),
+        ([], ["record"], ["record"], []),
+    ],
+)
+async def test_audit_requires_expected_record_in_each_index(
+    monkeypatch,
+    dense,
+    sparse,
+    missing_dense,
+    missing_sparse,
+):
+    monkeypatch.setattr(
+        indexer_module,
+        "get_vector_store",
+        lambda kind: _AuditStore(dense if kind == "dense" else sparse),
+    )
+    result = await indexer_module.audit_namespace("dev-audit", ["record"])
+    assert result["missing"] == ["record"]
+    assert result["missing_dense"] == missing_dense
+    assert result["missing_sparse"] == missing_sparse
+    assert result["parity"] is False
+
+
+@pytest.mark.asyncio
+async def test_audit_explicit_sparse_policy_permits_dense_only_summary(monkeypatch):
+    monkeypatch.setattr(
+        indexer_module,
+        "get_vector_store",
+        lambda kind: _AuditStore(["summary"] if kind == "dense" else []),
+    )
+    result = await indexer_module.audit_namespace("dev-audit", ["summary"], expected_sparse_ids=[])
+    assert result["parity"] is True
+    assert result["missing"] == []
+    assert result["orphaned"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("orphan_index", ["dense", "sparse"])
+async def test_audit_detects_orphan_in_either_index(monkeypatch, orphan_index):
+    monkeypatch.setattr(
+        indexer_module,
+        "get_vector_store",
+        lambda kind: _AuditStore(["record", "orphan"] if kind == orphan_index else ["record"]),
+    )
+    result = await indexer_module.audit_namespace("dev-audit", ["record"])
+    assert result["missing"] == []
+    assert result["orphaned"] == ["orphan"]
+    assert result[f"orphaned_{orphan_index}"] == ["orphan"]
+    assert result["parity"] is False
+
+
+@pytest.mark.asyncio
+async def test_audit_sparse_orphan_uses_sparse_policy_not_dense_policy(monkeypatch):
+    monkeypatch.setattr(indexer_module, "get_vector_store", lambda kind: _AuditStore(["summary"]))
+    result = await indexer_module.audit_namespace("dev-audit", ["summary"], expected_sparse_ids=[])
+    assert result["orphaned"] == ["summary"]
+    assert result["orphaned_dense"] == []
+    assert result["orphaned_sparse"] == ["summary"]
+    assert result["parity"] is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("ids", [[], ["a", "b"]])
+async def test_audit_empty_and_exact_indices_have_parity(monkeypatch, ids):
+    monkeypatch.setattr(indexer_module, "get_vector_store", lambda kind: _AuditStore(ids))
+    result = await indexer_module.audit_namespace("dev-audit", ids)
+    assert result["parity"] is True
+    for field in [
+        "missing",
+        "orphaned",
+        "missing_dense",
+        "missing_sparse",
+        "orphaned_dense",
+        "orphaned_sparse",
+    ]:
+        assert result[field] == []

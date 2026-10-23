@@ -107,6 +107,15 @@ class Settings(BaseSettings):
     # queue; see PROGRESS.md decisions)
     worker_poll_interval_s: float = 3.0
 
+    copilot_confidence_threshold: float = Field(default=0.7, ge=0, le=1)
+    copilot_max_grounding_retries: int = Field(default=2, ge=0, le=2)
+    copilot_pool_limit: int = Field(default=10, ge=1, le=50)
+    copilot_max_evidence_chunks: int = Field(default=12, ge=1, le=50)
+    github_timeout_s: float = Field(default=5.0, gt=0, le=15)
+    github_max_repos: int = Field(default=10, ge=1, le=30)
+    copilot_stream_poll_s: float = Field(default=0.25, gt=0)
+    copilot_stream_timeout_s: float = Field(default=120.0, gt=0)
+
     # Applicant upload (PRD F1.2)
     resume_upload_max_mb: float = 5.0
     resume_upload_dir: str = "data/uploads"

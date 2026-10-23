@@ -125,9 +125,56 @@ class IntakeState(BaseModel):
     explanation: str = ""
 
 
-class CopilotState(BaseModel):
-    """State threaded through graphs/copilot. Added to in M3."""
+class CopilotCitation(BaseModel):
+    chunk_id: str
+    application_id: str
+    text: str
+    section: str
+    char_start: int
+    char_end: int
 
-    scope: str  # "candidate:<application_id>" | "pool"
-    message: str
+
+class CopilotClaim(BaseModel):
+    text: str
+    chunk_ids: list[str] = Field(default_factory=list)
+
+
+class CopilotProposal(BaseModel):
+    application_id: str
+    status: str
+    reason: str = ""
+
+
+class CopilotResult(BaseModel):
+    run_id: str
+    route: str = "verify"
+    claims: list[CopilotClaim] = Field(default_factory=list)
+    citations: list[CopilotCitation] = Field(default_factory=list)
+    explanation: str = ""
+    confidence: float = 0.0
+    warnings: list[str] = Field(default_factory=list)
+    steps: list[str] = Field(default_factory=list)
     retries: int = 0
+    needs_confirmation: bool = False
+    proposal: CopilotProposal | None = None
+
+
+class CopilotState(BaseModel):
+    """Candidate/pool context and node outputs for the adaptive copilot."""
+
+    run_id: str = ""
+    job_id: str = ""
+    scope: str
+    message: str
+    route: str = "verify"
+    evidence: list[CopilotCitation] = Field(default_factory=list)
+    claims: list[CopilotClaim] = Field(default_factory=list)
+    explanation: str = ""
+    confidence: float = 0.0
+    warnings: list[str] = Field(default_factory=list)
+    steps: list[str] = Field(default_factory=list)
+    retries: int = 0
+    deep_verified: bool = False
+    external_context: str = ""
+    proposal: CopilotProposal | None = None
+    grounded: bool = False

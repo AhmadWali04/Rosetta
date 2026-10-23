@@ -386,7 +386,6 @@ Regression rule: CI fails if any metric drops > 5% vs the last committed baselin
 | Static + dynamic workflows | §7.1 fixed intake pipeline; §7.2 request- and result-adaptive copilot |
 | Evaluation harness | §11 — `make eval`, golden set, 11 metrics, regression gate |
 | Full stack, demoable | §13, §16 |
-
 ## 19. Open questions
 - Which LLM provider/budget does ProCogia expect (or should it run on an open-source model too)?
     - I will use OpenAI/Anthropic API's

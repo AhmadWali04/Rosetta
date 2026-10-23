@@ -58,10 +58,17 @@ async def ensure_indexes() -> dict[str, Any]:
     return await ensure_serverless_indexes()
 
 
-async def audit_namespace(namespace: str, expected_ids: list[str]) -> dict[str, Any]:
+async def audit_namespace(
+    namespace: str, expected_ids: list[str], *, expected_sparse_ids: list[str] | None = None
+) -> dict[str, Any]:
     """Compare `expected_ids` (supplied by the caller from Postgres — this
     module has no Postgres access of its own) against what the dense and
     sparse `VectorStore`s actually hold for `namespace`.
+
+    `expected_ids` describes the dense index. By default the same records
+    are required in sparse; pass `expected_sparse_ids` explicitly for a
+    namespace whose sparse policy differs (for example, [] for dense-only
+    candidate summaries). Each index is audited against its own policy.
 
     Returns:
         {
@@ -81,14 +88,15 @@ async def audit_namespace(namespace: str, expected_ids: list[str]) -> dict[str, 
     )
 
     expected = set(expected_ids)
+    expected_sparse = expected if expected_sparse_ids is None else set(expected_sparse_ids)
     dense_set = set(dense_ids)
     sparse_set = set(sparse_ids)
-    actual_either = dense_set | sparse_set
-
-    missing = sorted(expected - actual_either)
-    orphaned = sorted(actual_either - expected)
     missing_dense = sorted(expected - dense_set)
-    missing_sparse = sorted(expected - sparse_set)
+    missing_sparse = sorted(expected_sparse - sparse_set)
+    orphaned_dense = sorted(dense_set - expected)
+    orphaned_sparse = sorted(sparse_set - expected_sparse)
+    missing = sorted(set(missing_dense) | set(missing_sparse))
+    orphaned = sorted(set(orphaned_dense) | set(orphaned_sparse))
 
     return {
         "namespace": namespace,
@@ -96,6 +104,8 @@ async def audit_namespace(namespace: str, expected_ids: list[str]) -> dict[str, 
         "orphaned": orphaned,
         "missing_dense": missing_dense,
         "missing_sparse": missing_sparse,
+        "orphaned_dense": orphaned_dense,
+        "orphaned_sparse": orphaned_sparse,
         "parity": not missing and not orphaned,
     }
 
