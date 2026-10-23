@@ -543,6 +543,19 @@ asked about individually, since the user authorized "keep building")
   acceptance remain unverified. Existing native Tailwind/text-viewer stack
   deviations remain recorded from M2.
 
+## Dependency export — 2026-10-23
+
+Added root `requirements.txt` for Python 3.12,
+exported frozen runtime and dev dependencies from `apps/api/uv.lock` with
+`uv export --frozen --no-emit-project --format requirements-txt --no-hashes`.
+Added root-relative `-e ./apps/api` to install the shared local package.
+Install from the repo root with `python -m pip install -r requirements.txt`.
+`pyproject.toml`/`uv.lock` remain authoritative; regenerate the pins after
+dependency changes and retain the editable package line. AST import scan
+found all third-party Python import roots covered; frontend dependencies
+remain npm-managed. `make lint` and all 299 backend tests pass. No fresh
+pip environment was installed as part of this export.
+
 ## Not started
 
 M4 (Tech Lead portal), M5 (eval

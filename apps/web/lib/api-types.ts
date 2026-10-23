@@ -209,6 +209,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tech/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Queue */
+        get: operations["list_queue_tech_applications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tech/applications/{application_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Detail */
+        get: operations["get_detail_tech_applications__application_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tech/applications/{application_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide */
+        post: operations["decide_tech_applications__application_id__decision_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -562,6 +613,13 @@ export interface components {
             /** Chunk Ids */
             chunk_ids: string[];
         };
+        /** RubricScore */
+        RubricScore: {
+            /** Requirement Id */
+            requirement_id: string;
+            /** Score */
+            score: number;
+        };
         /** SkillOut */
         SkillOut: {
             /** Term */
@@ -582,6 +640,17 @@ export interface components {
             status: "valid" | "pending" | "rejected";
             /** Reason */
             reason?: string | null;
+        };
+        /** TechDecision */
+        TechDecision: {
+            /** Decision */
+            decision: string;
+            /** Rubric */
+            rubric?: components["schemas"]["RubricScore"][];
+            /** Overall */
+            overall?: number | null;
+            /** Comment */
+            comment?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -1037,6 +1106,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CopilotRunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_queue_tech_applications_get: {
+        parameters: {
+            query?: {
+                job_id?: string | null;
+            };
+            header?: {
+                "x-role"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineCandidate"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_detail_tech_applications__application_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-role"?: string | null;
+            };
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_tech_applications__application_id__decision_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-role"?: string | null;
+            };
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TechDecision"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineCandidate"];
                 };
             };
             /** @description Validation Error */

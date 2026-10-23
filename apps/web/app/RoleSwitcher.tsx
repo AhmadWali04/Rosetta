@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 export default function RoleSwitcher() {
   const pathname = usePathname();
   const router = useRouter();
-  const role = pathname.startsWith("/hr") ? "hr" : "applicant";
+  const role = pathname.startsWith("/hr") ? "hr" : pathname.startsWith("/tech") ? "tech" : "applicant";
 
   return (
     <nav aria-label="Portal navigation" className="border-b border-zinc-200 bg-white px-6 py-3">
@@ -16,12 +16,16 @@ export default function RoleSwitcher() {
           <select
             aria-label="Demo role"
             value={role}
-            onChange={(event) => router.push(event.target.value === "hr" ? "/hr" : "/")}
+            onChange={(event) =>
+              router.push(
+                event.target.value === "hr" ? "/hr" : event.target.value === "tech" ? "/tech" : "/"
+              )
+            }
             className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900"
           >
             <option value="applicant">Applicant</option>
             <option value="hr">HR</option>
-            <option value="tech" disabled>Tech Lead (coming in M4)</option>
+            <option value="tech">Tech Lead</option>
           </select>
         </label>
       </div>
