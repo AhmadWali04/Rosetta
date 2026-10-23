@@ -32,7 +32,7 @@ import app.db.session as db_session
 from app.config import get_settings
 from app.db.models import Application, Base, JdRequirement, Job, Profile, SkillTaxonomy
 from app.graphs.intake.graph import build_intake_graph
-from app.graphs.intake.hr_explainer import HrExplanationResult
+from app.graphs.intake.hr_explainer import HrExplanationResult, RequirementExplanation
 from app.graphs.intake.requirement_matcher import RequirementJudgment
 from app.graphs.intake.skill_extractor import SkillExtractionResult
 from app.graphs.intake.skill_normalizer import SkillNormalizationItem, SkillNormalizationResult
@@ -211,7 +211,12 @@ def mocked_dependencies(monkeypatch: pytest.MonkeyPatch) -> None:
     explainer_fake = FakeLLMProvider(
         responses={
             "HrExplanationResult": HrExplanationResult(
-                per_requirement={"req-pytorch": "PyTorch experience is clearly demonstrated."},
+                per_requirement=[
+                    RequirementExplanation(
+                        requirement_id="req-pytorch",
+                        explanation="PyTorch experience is clearly demonstrated.",
+                    )
+                ],
                 overall="Strong match on the one requirement.",
             )
         }

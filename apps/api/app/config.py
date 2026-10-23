@@ -13,7 +13,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 VectorBackend = Literal["memory", "pinecone-local", "pinecone"]
-LLMProvider = Literal["openai", "anthropic"]
+LLMProvider = Literal["openai", "anthropic", "gemini"]
 Env = Literal["dev", "demo", "eval"]
 
 
@@ -42,8 +42,18 @@ class Settings(BaseSettings):
     llm_provider: LLMProvider = "openai"
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
+    gemini_api_key: str | None = None
     openai_model: str = "gpt-4o-mini"
     anthropic_model: str | None = None
+    # Free-tier-friendly Gemini model (Google AI Studio API key, no billing
+    # required). Deliberately a "-latest" alias, not a pinned version: the
+    # newest pinned models (e.g. gemini-3.8-flash) returned repeated 503
+    # "high demand" errors live, while this alias worked first try and
+    # still supports structured output (response_schema) — verified live
+    # against the real API, not assumed. Aliases also sidestep the
+    # "model no longer available" 404s a pinned name eventually hits as
+    # Google retires versions. Override via GEMINI_MODEL if needed.
+    gemini_model: str = "gemini-flash-lite-latest"
     llm_temperature: float = 0.0
 
     # Relational DB. Host port is 5433 locally (docker-compose.yml maps

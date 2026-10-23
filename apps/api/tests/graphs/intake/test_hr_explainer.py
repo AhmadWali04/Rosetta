@@ -19,7 +19,11 @@ from sqlalchemy.orm import sessionmaker
 
 import app.db.session as db_session
 from app.db.models import Base, JdRequirement
-from app.graphs.intake.hr_explainer import HrExplanationResult, hr_explainer
+from app.graphs.intake.hr_explainer import (
+    HrExplanationResult,
+    RequirementExplanation,
+    hr_explainer,
+)
 from app.graphs.state import IntakeState, RequirementMatch
 from app.llm.fake import FakeLLMProvider
 
@@ -60,7 +64,12 @@ def test_hr_explainer_happy_path(sqlite_engine: Engine, monkeypatch: pytest.Monk
     fake = FakeLLMProvider(
         responses={
             "HrExplanationResult": HrExplanationResult(
-                per_requirement={"r1": "FastAPI is a Python backend framework - this fits."},
+                per_requirement=[
+                    RequirementExplanation(
+                        requirement_id="r1",
+                        explanation="FastAPI is a Python backend framework - this fits.",
+                    )
+                ],
                 overall="Strong overall fit.",
             )
         }
@@ -87,10 +96,13 @@ def test_hr_explainer_filters_invented_requirement_ids(
     fake = FakeLLMProvider(
         responses={
             "HrExplanationResult": HrExplanationResult(
-                per_requirement={
-                    "r1": "Fits well.",
-                    "r999": "This requirement was never evaluated.",
-                },
+                per_requirement=[
+                    RequirementExplanation(requirement_id="r1", explanation="Fits well."),
+                    RequirementExplanation(
+                        requirement_id="r999",
+                        explanation="This requirement was never evaluated.",
+                    ),
+                ],
                 overall="Looks fine.",
             )
         }

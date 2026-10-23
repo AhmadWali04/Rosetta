@@ -34,7 +34,7 @@ def _exercise() -> None:
     from app.db.models import Application, JdRequirement, Job, Profile, ResumeChunk, SkillTaxonomy
     from app.db.session import SessionLocal
     from app.graphs.intake.graph import ensure_checkpointer_schema, run_intake_graph
-    from app.graphs.intake.hr_explainer import HrExplanationResult
+    from app.graphs.intake.hr_explainer import HrExplanationResult, RequirementExplanation
     from app.graphs.intake.requirement_matcher import RequirementJudgment
     from app.graphs.intake.skill_extractor import SkillExtractionResult
     from app.graphs.intake.skill_normalizer import (
@@ -156,9 +156,12 @@ def _exercise() -> None:
                         rationale="The resume describes building Python services.",
                     ),
                     "HrExplanationResult": HrExplanationResult(
-                        per_requirement={
-                            requirement_id: "Python services are demonstrated in project work."
-                        },
+                        per_requirement=[
+                            RequirementExplanation(
+                                requirement_id=requirement_id,
+                                explanation="Python services are demonstrated in project work.",
+                            )
+                        ],
                         overall="",
                     ),
                 }

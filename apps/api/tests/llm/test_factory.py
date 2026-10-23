@@ -16,6 +16,7 @@ from app.config import get_settings
 from app.llm import factory
 from app.llm.anthropic_provider import AnthropicProvider
 from app.llm.factory import get_llm_provider
+from app.llm.gemini_provider import GeminiProvider
 from app.llm.openai_provider import OpenAIProvider
 
 
@@ -42,6 +43,14 @@ def test_returns_anthropic_provider_when_configured(monkeypatch: pytest.MonkeyPa
 
     provider = get_llm_provider()
     assert isinstance(provider, AnthropicProvider)
+
+
+def test_returns_gemini_provider_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    get_settings.cache_clear()
+
+    provider = get_llm_provider()
+    assert isinstance(provider, GeminiProvider)
 
 
 def test_instances_are_cached_per_provider() -> None:

@@ -13,14 +13,16 @@ from __future__ import annotations
 from app.config import get_settings
 from app.llm.anthropic_provider import AnthropicProvider
 from app.llm.base import LLMProvider
+from app.llm.gemini_provider import GeminiProvider
 from app.llm.openai_provider import OpenAIProvider
 
 _INSTANCES: dict[str, LLMProvider] = {}
 
 
 def get_llm_provider() -> LLMProvider:
-    """Return the `LLMProvider` for `settings.llm_provider` ("openai" or
-    "anthropic"). Cached per provider name for the lifetime of the process.
+    """Return the `LLMProvider` for `settings.llm_provider` ("openai",
+    "anthropic", or "gemini"). Cached per provider name for the lifetime of
+    the process.
     """
     settings = get_settings()
     key = settings.llm_provider
@@ -32,6 +34,8 @@ def get_llm_provider() -> LLMProvider:
         provider = OpenAIProvider()
     elif key == "anthropic":
         provider = AnthropicProvider()
+    elif key == "gemini":
+        provider = GeminiProvider()
     else:  # pragma: no cover - Literal in config.py prevents this at type-check time
         raise ValueError(f"Unknown LLM_PROVIDER: {key!r}")
 

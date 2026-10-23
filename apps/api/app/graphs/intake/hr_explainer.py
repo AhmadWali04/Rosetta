@@ -51,8 +51,24 @@ from app.prompts import load_prompt
 _SYSTEM_PROMPT = load_prompt("hr_explainer.v1")
 
 
+class RequirementExplanation(BaseModel):
+    requirement_id: str
+    explanation: str
+
+
 class HrExplanationResult(BaseModel):
-    per_requirement: dict[str, str] = Field(default_factory=dict)  # requirement_id -> explanation
+    # A list of {requirement_id, explanation}, NOT dict[str, str] — an
+    # open-ended dict's JSON schema (`additionalProperties`) is rejected by
+    # Gemini's Developer API free tier ("additionalProperties is only
+    # supported in Gemini Enterprise Agent Platform mode"), confirmed live
+    # against the real API, not assumed from docs. OpenAI's structured
+    # outputs have the same restriction in strict mode (a fixed/enumerable
+    # property set, no truly dynamic keys) — this was a latent bug for
+    # OpenAI too, just never exercised live before OpenAI credits ran out.
+    # Converted back to the dict shape `app/services/hr.py` already expects
+    # in `_hr_explainer_async` below, before it's serialized/persisted —
+    # this is purely an LLM-output-schema fix, not a stored-data-shape change.
+    per_requirement: list[RequirementExplanation] = Field(default_factory=list)
     overall: str = ""
 
 
@@ -112,13 +128,19 @@ async def _hr_explainer_async(state: IntakeState) -> dict[str, Any]:
 
     result = await _explain(state, requirement_text_by_id)
 
-    # Grounding filter: drop any per_requirement key that doesn't correspond
-    # to a requirement_id we actually evaluated — an invented key would be a
-    # claim about a requirement that was never matched, which the module
-    # docstring's "never invent new ... claims" explicitly rules out.
+    # Grounding filter: drop any per_requirement entry that doesn't
+    # correspond to a requirement_id we actually evaluated — an invented
+    # entry would be a claim about a requirement that was never matched,
+    # which the module docstring's "never invent new ... claims" explicitly
+    # rules out. Also converts the LLM's list-of-objects output shape back
+    # into the dict shape `app/services/hr.py` expects in the persisted
+    # `explanation` JSON (see `HrExplanationResult`'s docstring for why the
+    # LLM-facing shape differs from the stored shape).
     valid_ids = set(requirement_ids)
     per_requirement = {
-        req_id: text for req_id, text in result.per_requirement.items() if req_id in valid_ids
+        item.requirement_id: item.explanation
+        for item in result.per_requirement
+        if item.requirement_id in valid_ids
     }
 
     payload = {"per_requirement": per_requirement, "overall": result.overall}
