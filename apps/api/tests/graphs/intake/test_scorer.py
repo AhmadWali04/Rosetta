@@ -352,3 +352,79 @@ def test_scorer_reads_weights_from_settings_not_hardcoded(
     # With must_have_coverage weight=1.0 and everything else zeroed out:
     # score == must_have_coverage == 1.0
     assert result["score"] == pytest.approx(1.0)
+
+
+def test_scorer_emits_reproducible_components_and_keeps_absent_similarity_null(sqlite_engine):
+    _seed_job(sqlite_engine, requirements=[("r1", "must_have", 1.0)])
+    state = IntakeState(
+        application_id="a",
+        job_id="j1",
+        resume_path="r.pdf",
+        requirement_matches=[_match("r1", "met")],
+    )
+    result = scorer(state)
+    assert result["score_components"].semantic_similarity_raw is None
+    assert result["score_components"].must_have_coverage == 1
+    assert result["score_components"].citation_density == 1
+    assert result["flags"] == []
+
+
+def test_scorer_detects_keyword_stuffing_and_respects_threshold_overrides(
+    sqlite_engine, monkeypatch
+):
+    _seed_job(sqlite_engine, requirements=[])
+    skill = _production_skill()
+    skills = [
+        skill.model_copy(
+            update={"extracted": skill.extracted.model_copy(update={"depth_signal": "list_only"})}
+        )
+        for _ in range(4)
+    ] + [skill]
+    state = IntakeState(
+        application_id="a", job_id="j1", resume_path="r.pdf", normalized_skills=skills
+    )
+    result = scorer(state)
+    assert "keyword_stuffing_suspected" in result["flags"]
+    assert result["recommendation"] == "review"
+    assert state.flags == []
+    settings = get_settings().model_copy(update={"keyword_stuffing_ratio_threshold": 0.9})
+    monkeypatch.setattr("app.graphs.intake.scorer.get_settings", lambda: settings)
+    assert scorer(state)["flags"] == []
+    settings = settings.model_copy(
+        update={"keyword_stuffing_ratio_threshold": 0.8, "keyword_stuffing_min_skills": 6}
+    )
+    monkeypatch.setattr("app.graphs.intake.scorer.get_settings", lambda: settings)
+    assert scorer(state)["flags"] == []
+
+
+def test_depth_and_penalty_values_come_from_config():
+    state = IntakeState(
+        application_id="a", job_id="j", resume_path="r.pdf", normalized_skills=[_production_skill()]
+    )
+    settings = get_settings().model_copy(
+        update={
+            "scoring_depth_values": {"production": 0.6, "list_only": 0.1},
+            "keyword_stuffing_max_penalty": 0.3,
+        }
+    )
+    assert _depth_signal_average(state, settings) == pytest.approx(0.6)
+    state.normalized_skills[0].extracted.depth_signal = "list_only"
+    assert _keyword_stuffing_penalty(state, settings) == pytest.approx(0.3)
+
+
+def test_scorer_preserves_negative_raw_cosine_for_later_pool_normalization(
+    sqlite_engine, monkeypatch
+):
+    _seed_job(sqlite_engine, requirements=[])
+
+    class Embedder:
+        async def embed_dense(self, texts):
+            return [[-1.0, 0.0]]
+
+    monkeypatch.setattr("app.graphs.intake.scorer.get_embedder", lambda: Embedder())
+    state = IntakeState(
+        application_id="a", job_id="j1", resume_path="r.pdf", summary_vector=[1.0, 0.0]
+    )
+    result = scorer(state)
+    assert result["score_components"].semantic_similarity_raw == -1
+    assert result["score"] == 0

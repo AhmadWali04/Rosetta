@@ -70,6 +70,17 @@ class RequirementMatch(BaseModel):
     rationale: str = ""
 
 
+class ScoreComponents(BaseModel):
+    """Rebuildable inputs to pool-normalized PRD §9 scoring."""
+
+    must_have_coverage: float
+    nice_to_have_coverage: float
+    semantic_similarity_raw: float | None
+    depth_signal: float
+    penalty: float
+    citation_density: float
+
+
 class IntakeState(BaseModel):
     """State threaded through graphs/intake. One field per node's output,
     in the order the static pipeline (PRD §7.1) produces them:
@@ -106,6 +117,7 @@ class IntakeState(BaseModel):
     normalized_skills: list[NormalizedSkill] = Field(default_factory=list)
     requirement_matches: list[RequirementMatch] = Field(default_factory=list)
 
+    score_components: ScoreComponents | None = None
     score: float = 0.0
     recommendation: str = "review"  # advance | review | decline
     confidence: float = 0.0

@@ -5,18 +5,11 @@ Kept as its own file rather than folded into Agent D's `hr_explainer.py`
 so the DB-write step is independently unit-testable, matching the PRD's
 explicit "...then Persist" framing of the pipeline.
 
-Writes the final `Profile` row, flips `Application.status` to `analyzed`,
-and writes the closing `intake_complete` audit event (AGENTS.md invariant
-#4: audit everything). Does not touch `vector_status` (owned by
-`chunk_and_index`) and does not add to `flags` (accumulated upstream by
-`sanitize`/`chunk_and_index`/the LLM nodes) — this node persists whatever
-`state` already holds, it doesn't decide anything new.
-
-If a `Profile` row already exists for this application (e.g. a graph
-re-run / retry), it is replaced rather than left to raise an integrity
-error on the primary-key insert — `application_id` is the `Profile`
-primary key (graphs/state.py / db/models.py), so re-running intake for the
-same application must overwrite, not duplicate.
+Updates the profile in place, then normalizes component-backed scores across
+the job pool in the same transaction. Returns the committed values to graph
+state, and audits score changes plus intake completion. Job-first locking
+matches HR mutations. New intakes become analyzed; reruns preserve human
+decisions. Vector status remains owned by chunk_and_index.
 
 `async def`, matching every other node in this package (see
 `ingest_parse.py`'s docstring) — trivially so here, since this node's own
@@ -27,9 +20,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.db.models import Application, Event, Profile
+from sqlalchemy import select
+
+from app.config import get_settings
+from app.db.models import Application, Event, Job, Profile
 from app.db.session import session_scope
 from app.graphs.state import IntakeState
+from app.services.pool_scoring import recompute_pool
 
 
 async def persist(state: IntakeState) -> dict[str, Any]:
@@ -41,36 +38,55 @@ async def persist(state: IntakeState) -> dict[str, Any]:
         if application is None:
             raise ValueError(f"persist: no Application row for id={state.application_id!r}")
 
-        existing = session.get(Profile, state.application_id)
-        if existing is not None:
-            session.delete(existing)
-            session.flush()
-
-        session.add(
-            Profile(
-                application_id=state.application_id,
-                skills=skills_json,
-                requirement_matches=requirement_matches_json,
-                score=state.score,
-                recommendation=state.recommendation,
-                confidence=state.confidence,
-                flags=list(state.flags),
-                explanation=state.explanation,
-            )
+        if application.job_id != state.job_id:
+            raise ValueError("persist: application does not belong to the graph's job")
+        # Always job -> application -> profile, matching HR decisions/promotion.
+        # No writes/flushes may happen before the job lock is acquired.
+        job = session.scalar(select(Job).where(Job.id == state.job_id).with_for_update())
+        if job is None:
+            raise ValueError(f"persist: no Job row for id={state.job_id!r}")
+        application = session.scalar(
+            select(Application)
+            .where(Application.id == state.application_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
         )
-        application.status = "analyzed"
+        if application is None:
+            raise ValueError("persist: application disappeared before persistence")
+        profile = session.get(Profile, state.application_id)
+        if profile is None:
+            profile = Profile(application_id=state.application_id)
+            session.add(profile)
+        profile.skills = skills_json
+        profile.requirement_matches = requirement_matches_json
+        profile.score = state.score
+        profile.recommendation = state.recommendation
+        profile.confidence = state.confidence
+        profile.flags = list(state.flags)
+        profile.explanation = state.explanation
+        profile.score_components = (
+            state.score_components.model_dump() if state.score_components is not None else None
+        )
+        # A retry must never undo an HR/Tech Lead decision.
+        if application.status in {"submitted", "analyzing", "intake_failed"}:
+            application.status = "analyzed"
+        session.flush()
+        recompute_pool(session, state.job_id, get_settings())
         session.add(
             Event(
                 application_id=state.application_id,
                 actor="system",
                 action="intake_complete",
                 payload={
-                    "score": state.score,
-                    "recommendation": state.recommendation,
-                    "confidence": state.confidence,
+                    "score": profile.score,
+                    "recommendation": profile.recommendation,
+                    "confidence": profile.confidence,
                 },
             )
         )
         session.commit()
-
-    return {}
+        return {
+            "score": profile.score,
+            "recommendation": profile.recommendation,
+            "confidence": profile.confidence,
+        }

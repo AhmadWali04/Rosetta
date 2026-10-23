@@ -29,35 +29,16 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.config import ScoringThresholds, ScoringWeights, Settings, get_settings
+from app.config import ScoringThresholds, Settings, get_settings
 from app.db.models import JdRequirement, Job
 from app.db.session import session_scope
-from app.graphs.state import IntakeState, RequirementMatch
+from app.graphs.state import IntakeState, RequirementMatch, ScoreComponents
 from app.rag.embeddings import get_embedder
+from app.services.scoring import score_profile
 
 logger = logging.getLogger("skillbridge.intake.scorer")
 
 _STATUS_VALUE = {"met": 1.0, "partial": 0.5, "missing": 0.0}
-
-# PRD §9: "depth signal distinguishes 'listed in Skills' vs 'used in a
-# shipped project'". PRD gives no exact numbers for the four tiers — this
-# mapping is a documented judgment call. Unknown/unrecognised depth_signal
-# strings fall back to the `list_only` weight (treat unverifiable depth as
-# minimal-evidence, not zero-evidence and not full credit).
-_DEPTH_SIGNAL_VALUE = {
-    "list_only": 0.2,
-    "coursework": 0.5,
-    "project": 0.8,
-    "production": 1.0,
-}
-_DEPTH_SIGNAL_UNKNOWN_DEFAULT = _DEPTH_SIGNAL_VALUE["list_only"]
-
-# Simple, optional keyword-stuffing signal (PRD §9 lists the full detector
-# as a stretch item). Proportional penalty capped at this many score
-# points, scaled by the fraction of skills that are list_only-only
-# evidence — deliberately small so it nudges, rather than dominates, the
-# score.
-_KEYWORD_STUFFING_MAX_PENALTY = 0.10
 
 
 def _coverage(
@@ -86,19 +67,20 @@ def _coverage(
     return weighted_sum / total_weight
 
 
-def _depth_signal_average(state: IntakeState) -> float:
+def _depth_signal_average(state: IntakeState, settings: Settings | None = None) -> float:
     if not state.normalized_skills:
         # No skills extracted/normalized at all — no depth evidence exists,
         # so 0.0 rather than some assumed middle value.
         return 0.0
+    depth_values = (settings or get_settings()).scoring_depth_values
     values = [
-        _DEPTH_SIGNAL_VALUE.get(ns.extracted.depth_signal, _DEPTH_SIGNAL_UNKNOWN_DEFAULT)
+        depth_values.get(ns.extracted.depth_signal, depth_values["list_only"])
         for ns in state.normalized_skills
     ]
     return sum(values) / len(values)
 
 
-def _keyword_stuffing_penalty(state: IntakeState) -> float:
+def _keyword_stuffing_penalty(state: IntakeState, settings: Settings | None = None) -> float:
     """Optional, cheap stuffing signal: ratio of skills with no evidence
     beyond a bare list vs total skills, scaled into a small penalty. Not
     PRD §9's full keyword-stuffing detector (n-gram JD overlap etc) — that
@@ -109,7 +91,7 @@ def _keyword_stuffing_penalty(state: IntakeState) -> float:
     total = len(state.normalized_skills)
     list_only = sum(1 for ns in state.normalized_skills if ns.extracted.depth_signal == "list_only")
     ratio = list_only / total
-    return _KEYWORD_STUFFING_MAX_PENALTY * ratio
+    return (settings or get_settings()).keyword_stuffing_max_penalty * ratio
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
@@ -124,15 +106,11 @@ def _cosine(a: list[float], b: list[float]) -> float:
 
 
 async def _semantic_similarity(state: IntakeState, job_raw_jd: str) -> float:
-    """Cosine of the candidate summary vector vs a fresh embedding of the
-    job's raw JD text. PRD §9's literal wording says "min-max normalised
-    across pool" — deliberately NOT implemented here: M1 processes one
-    applicant at a time, there is no pool to normalize against yet. Using
-    the raw cosine directly is a documented M2 deferral (the HR portal's
-    pool-wide table/ranking is where a pool-wide min-max normalization
-    actually makes sense). No caching of the JD embedding either — embedded
-    fresh every call, flagged as a known latency cost, not a bug (PRD §11
-    p95 < 30s is the thing to watch if this becomes a problem)."""
+    """Raw cosine retained for transactional pool normalization at persistence.
+
+    This node computes a provisional score; committed profile scores are
+    recomputed across the job pool from these reproducible components.
+    """
     if not state.summary_vector:
         return 0.0
     embedder = get_embedder()
@@ -197,46 +175,50 @@ async def _compute(
     job_raw_jd: str,
     weight_by_id: dict[str, float],
     kind_by_id: dict[str, str],
-    weights: ScoringWeights,
-    thresholds: ScoringThresholds,
+    settings: Settings,
 ) -> dict[str, Any]:
-    must_have_coverage = _coverage(state.requirement_matches, weight_by_id, kind_by_id, "must_have")
-    nice_to_have_coverage = _coverage(
-        state.requirement_matches, weight_by_id, kind_by_id, "nice_to_have"
+    similarity = await _semantic_similarity(state, job_raw_jd) if state.summary_vector else None
+    components = ScoreComponents(
+        must_have_coverage=_coverage(
+            state.requirement_matches, weight_by_id, kind_by_id, "must_have"
+        ),
+        nice_to_have_coverage=_coverage(
+            state.requirement_matches, weight_by_id, kind_by_id, "nice_to_have"
+        ),
+        semantic_similarity_raw=similarity,
+        depth_signal=_depth_signal_average(state, settings),
+        penalty=_keyword_stuffing_penalty(state, settings),
+        citation_density=(
+            sum(bool(match.resolved_chunk_ids) for match in state.requirement_matches)
+            / len(state.requirement_matches)
+            if state.requirement_matches
+            else 0.0
+        ),
     )
-    semantic_similarity = await _semantic_similarity(state, job_raw_jd)
-    depth_signal = _depth_signal_average(state)
-    penalty = _keyword_stuffing_penalty(state)
-
-    raw_score = (
-        weights.must_have_coverage * must_have_coverage
-        + weights.nice_to_have_coverage * nice_to_have_coverage
-        + weights.semantic_similarity * semantic_similarity
-        + weights.depth_signal * depth_signal
-        - penalty
+    flags = list(state.flags)
+    total = len(state.normalized_skills)
+    list_only = sum(
+        skill.extracted.depth_signal == "list_only" for skill in state.normalized_skills
     )
-    score = max(0.0, min(1.0, raw_score))
-
-    recommendation = _recommendation(score, thresholds)
-
-    # AGENTS.md invariant #3 / PRD §9: an injection flag must force
-    # "review" regardless of score — applied AFTER the threshold lookup,
-    # as an override on `recommendation`, not by mangling `score` into
-    # meaninglessness. `score` stays an honest number either way.
-    if "prompt_injection_suspected" in state.flags:
-        if recommendation != "review":
-            logger.info(
-                "scorer: application %s recommendation overridden %s -> review "
-                "(prompt_injection_suspected flag set; score=%.4f unchanged)",
-                state.application_id,
-                recommendation,
-                score,
-            )
-        recommendation = "review"
-
-    confidence = _confidence(state.requirement_matches, must_have_coverage, semantic_similarity)
-
-    return {"score": score, "recommendation": recommendation, "confidence": confidence}
+    if (
+        total >= settings.keyword_stuffing_min_skills
+        and list_only / total >= settings.keyword_stuffing_ratio_threshold
+        and "keyword_stuffing_suspected" not in flags
+    ):
+        flags.append("keyword_stuffing_suspected")
+    score, recommendation, confidence = score_profile(
+        components,
+        max(0.0, min(1.0, similarity or 0.0)),
+        flags,
+        settings,
+    )
+    return {
+        "score": score,
+        "recommendation": recommendation,
+        "confidence": confidence,
+        "score_components": components,
+        "flags": flags,
+    }
 
 
 def scorer(state: IntakeState) -> dict[str, Any]:
@@ -253,7 +235,6 @@ def scorer(state: IntakeState) -> dict[str, Any]:
             job_raw_jd,
             weight_by_id,
             kind_by_id,
-            settings.scoring_weights,
-            settings.scoring_thresholds,
+            settings,
         )
     )

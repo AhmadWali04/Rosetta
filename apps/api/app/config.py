@@ -78,6 +78,19 @@ class Settings(BaseSettings):
     scoring_weights: ScoringWeights = Field(default_factory=ScoringWeights)
     scoring_thresholds: ScoringThresholds = Field(default_factory=ScoringThresholds)
 
+    scoring_min_confidence: float = Field(default=0.5, ge=0, le=1)
+    keyword_stuffing_ratio_threshold: float = Field(default=0.8, ge=0, le=1)
+    keyword_stuffing_min_skills: int = Field(default=5, ge=1)
+    keyword_stuffing_max_penalty: float = Field(default=0.10, ge=0, le=1)
+    scoring_depth_values: dict[str, float] = Field(
+        default_factory=lambda: {
+            "list_only": 0.2,
+            "coursework": 0.5,
+            "project": 0.8,
+            "production": 1.0,
+        }
+    )
+
     # Freshness wait (PRD §8.6)
     vector_freshness_timeout_s: float = 15.0
 

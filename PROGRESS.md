@@ -2,7 +2,7 @@
 
 > Live tracker (agents.md: "Read it before starting. Update it before ending a session.")
 
-## Status: M1 — complete, backend verified live; LLM path verified via fakes only (see gaps)
+## Status: M2 — HR workflow implemented; automated checks and existing-DB startup verified; acceptance gaps below
 
 M0 scope (PRD §17): repo scaffold, Docker Compose, DB schema, VectorStore
 interface (memory + Pinecone Local + Pinecone), `make pinecone-init`, seed
@@ -289,6 +289,14 @@ asked about individually, since the user authorized "keep building")
 
 ## Known gaps / next steps
 
+### Codex handoff verification — 2026-10-23
+
+- Reviewed AGENTS.md, PRD M2 requirements, current routes/services, and git
+  history; working tree was clean at handoff. M2 remains unstarted.
+- Baseline verified: `make lint` passes (currently backend checks only),
+  `make test-api` passes all 149 tests, and `make test-web` passes all 5 tests.
+- User approved the M2 plan; implementation and verification are recorded below.
+
 - **Live LLM path unverified** (see above) — logic is unit-tested via
   fakes, but no real OpenAI call has completed successfully end-to-end
   through the whole graph. Needs OpenAI credits to close this gap.
@@ -301,11 +309,100 @@ asked about individually, since the user authorized "keep building")
   cwd-dependent for local non-Docker dev — a known rough edge, not fixed.
 - `VectorStore.query()` (dense-shaped) now cleanly coexists with the new
   `query_sparse()` — the M0-era rough edge is resolved.
-- M2 is next: HR portal — pipeline table, candidate drawer with
-  citations, labelling, promote-top-X% (PRD §17). This is also where
-  pool-wide score normalization and `jobs` schema additions make sense.
+- Pool-wide semantic normalization and keyword-stuffing/low-confidence
+  recommendation guardrails are now implemented in the M2 scoring follow-up
+  below. Legacy profiles without raw components need an explicit intake
+  rerun before they can participate in normalization.
+
+## M2 — HR workflow implementation (2026-10-23)
+
+### Implemented
+
+- F2.1: `/hr` pipeline table with status filtering, score/date sorting,
+  score/recommendation/confidence, grounded must-have counts, flags, status,
+  loading/error/empty states and refresh. Root navigation switches between
+  Applicant and HR; Tech Lead remains disabled until M4.
+- F2.2: candidate detail panel with requirement checklist, per-requirement
+  explanations, skill translation, and clickable citations that focus and
+  highlight sanitized resume chunks. Hydration reads only this candidate's
+  Postgres chunks and translates stored Pinecone IDs to chunk row IDs.
+  Unresolved requirement claims are downgraded; ungrounded skills and overall
+  explanation are omitted. Skill links require shared evidence plus an
+  explicit term match in the requirement, avoiding unrelated same-chunk links.
+- Blind mode suppresses names and identity-bearing resume/skill/explanation/
+  audit payload content; it does not claim to anonymize the underlying API.
+- F2.4/F2.6: HR-only manual labels with optional reason, immutable audit rows,
+  explicit override records, and guards against changing intake/tech states.
+- F2.5: pending-only ranked promotion preview and explicit confirmation of
+  candidate IDs, deterministic ties and ceiling rounding, stale selection
+  rejection, and job/application locking around atomic audited decisions.
+- API contracts in `routes/hr_schemas.py`, thin HTTP endpoints in
+  `routes/hr.py`, business logic in `services/hr.py`; generated frontend client
+  refreshed through `make gen-client`. HR endpoints require `X-Role: hr`,
+  matching the demo role-switcher model, not production authentication.
+- `make lint` now includes frontend ESLint and TypeScript in addition to
+  ruff/format/mypy. New regressions cover role checks, citation isolation,
+  unrelated skill mappings, audit overrides, transition guards, promotion
+  stale/rounding cases, blind mode, citation focus and mutation races.
+
+### Verification and acceptance limits
+
+- Final checks: `make lint` passes (ruff, format, mypy, ESLint, tsc),
+  `make test-api` passes 172 tests, `make test-web` passes 13 tests;
+  `git diff --check` passes. One final rerun initially hit ENOSPC and a
+  mypy cache error; cleared only the generated project mypy cache and
+  successfully reran lint/frontend tests sequentially. Disk remains low
+  (~170 MiB free); no user data or Docker volumes were deleted.
+- `make up` built API/worker images and started db, api, worker and web.
+  Existing seeded Postgres data was retained. `/health`, HR pipeline/detail,
+  and `/hr` returned HTTP 200; an HR read without the role returned 403.
+- After rebuilding with final fixes, live failed-intake details correctly
+  return `not_evaluated` and “Analysis has not completed.” rather than false
+  missing judgments when no profile exists.
+- No vectors are written/deleted by this feature, so vector parity is
+  unchanged. No real LLM requests, cloud seed/reindex operations, new
+  dependencies, migrations, or commits were initiated by this work.
+- Clean-DB reseed and a browser-driven full HR workflow with a completed live
+  intake remain unverified. Current stored demo applicants have failed intake
+  due to the previously recorded OpenAI credits issue. Fake-provider and
+  in-memory DB regression coverage verifies review behavior independently.
+- Explicit deviations retained: `/hr/applications` adds a separate HR read
+  surface rather than changing applicant-facing response contracts; native
+  Tailwind controls and a sanitized chunk text viewer are used because
+  shadcn/react-pdf are not installed and new dependencies need approval.
+  Full shadcn and PDF-viewer adoption remains outstanding.
+- F2.3 Recruiter Copilot remains M3 scope. Do not advance to M3 until M2's
+  outstanding scoring/acceptance checks above are resolved.
+
+### M2 scoring follow-up — 2026-10-23
+
+- PRD §9: typed raw score components now flow through graph state and persist
+  in `profiles.score_components` via new migration `0002_score_components`.
+  Applied with `make migrate` to the local development database; existing
+  migration history and human labels are preserved.
+- Completing intake locks the job first, updates the profile in place, and
+  recomputes all component-backed profiles in that job atomically. Only the
+  raw semantic component is min-max normalized; the other weighted signals
+  retain their original meaning. Committed score/recommendation/confidence
+  return to graph state. Each changed profile gets a `score_recomputed` audit
+  event, and `intake_complete` records the final values.
+- Singleton/equal-similarity pools assign zero relative semantic credit;
+  absent similarities do not affect the bounds and contribute zero. Negative
+  raw cosines are retained. Old profiles whose components cannot be honestly
+  reconstructed retain their prior scores and are excluded until rerun.
+- Human pending/valid/rejected/tech/invited decisions survive both pool
+  changes and intake retries. Mismatched application/job state is rejected;
+  a failed commit rolls back the entire pool update and its audit events.
+- Low confidence, injection flags, and detected bare-list skill stuffing
+  force a Review recommendation. No candidate is automatically rejected or
+  relabelled. New guardrail settings and prior depth/penalty constants live
+  in config, with environment examples. No prompt or golden data changes.
+- New regressions cover normalization, pool/job isolation, ties/missing data,
+  configurable guardrails, reruns, audit idempotency, preserved decisions and
+  rollback. Added `make smoke-hr` for isolated Postgres acceptance using fake
+  LLMs and memory vectors; final smoke/check results recorded below once run.
 
 ## Not started
 
-M2 (HR portal), M3 (copilot dynamic graph), M4 (Tech Lead portal), M5 (eval
+M3 (copilot dynamic graph), M4 (Tech Lead portal), M5 (eval
 harness + Langfuse), M6 (polish + demo).

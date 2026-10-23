@@ -64,6 +64,8 @@ class Profile(Base):
     score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     recommendation: Mapped[str] = mapped_column(String, nullable=False, default="review")
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    # Null means a legacy profile whose raw signals cannot be reconstructed.
+    score_components: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     flags: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     explanation: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
