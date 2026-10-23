@@ -1,0 +1,1297 @@
+[
+  {
+    "canonical": "Python",
+    "alt_labels": [
+      "Python 3",
+      "CPython"
+    ],
+    "description": "General-purpose, dynamically typed programming language widely used for data science, backend services, and AI/ML.",
+    "source": "onet"
+  },
+  {
+    "canonical": "JavaScript",
+    "alt_labels": [
+      "JS",
+      "ECMAScript",
+      "Vanilla JS"
+    ],
+    "description": "Scripting language for interactive web pages and, via runtimes like Node.js, backend services.",
+    "source": "onet"
+  },
+  {
+    "canonical": "TypeScript",
+    "alt_labels": [
+      "TS"
+    ],
+    "description": "Statically typed superset of JavaScript that compiles to plain JavaScript.",
+    "source": "onet"
+  },
+  {
+    "canonical": "SQL",
+    "alt_labels": [
+      "Structured Query Language",
+      "T-SQL",
+      "PL/pgSQL"
+    ],
+    "description": "Declarative language for querying and manipulating relational databases.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Java",
+    "alt_labels": [
+      "Java SE",
+      "Java EE",
+      "JVM"
+    ],
+    "description": "Statically typed, object-oriented language widely used for enterprise backend systems.",
+    "source": "onet"
+  },
+  {
+    "canonical": "C++",
+    "alt_labels": [
+      "Cpp",
+      "C plus plus"
+    ],
+    "description": "Compiled, performance-oriented language used for systems, games, and high-performance computing.",
+    "source": "onet"
+  },
+  {
+    "canonical": "C",
+    "alt_labels": [
+      "ANSI C",
+      "C programming language"
+    ],
+    "description": "Low-level procedural language underlying most operating systems and embedded systems.",
+    "source": "onet"
+  },
+  {
+    "canonical": "C#",
+    "alt_labels": [
+      "C Sharp",
+      ".NET C#"
+    ],
+    "description": "Object-oriented language developed by Microsoft, primarily used with the .NET platform.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Go",
+    "alt_labels": [
+      "Golang"
+    ],
+    "description": "Compiled, statically typed language designed for simplicity and concurrency, common in backend and infra tooling.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Rust",
+    "alt_labels": [],
+    "description": "Systems programming language focused on memory safety without a garbage collector.",
+    "source": "onet"
+  },
+  {
+    "canonical": "R",
+    "alt_labels": [
+      "R language",
+      "R programming"
+    ],
+    "description": "Language and environment for statistical computing and graphics.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Scala",
+    "alt_labels": [],
+    "description": "Statically typed language that runs on the JVM, combining object-oriented and functional programming; common in big-data tooling (Spark).",
+    "source": "onet"
+  },
+  {
+    "canonical": "Bash / Shell Scripting",
+    "alt_labels": [
+      "Bash",
+      "Shell scripting",
+      "sh",
+      "Zsh"
+    ],
+    "description": "Scripting in Unix shells for automation, tooling, and systems work.",
+    "source": "onet"
+  },
+  {
+    "canonical": "HTML",
+    "alt_labels": [
+      "HTML5",
+      "Hypertext Markup Language"
+    ],
+    "description": "Markup language for structuring content on the web.",
+    "source": "onet"
+  },
+  {
+    "canonical": "CSS",
+    "alt_labels": [
+      "CSS3",
+      "Cascading Style Sheets"
+    ],
+    "description": "Stylesheet language for the visual presentation of web pages.",
+    "source": "onet"
+  },
+  {
+    "canonical": "PHP",
+    "alt_labels": [],
+    "description": "Server-side scripting language widely used for web development.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Ruby",
+    "alt_labels": [],
+    "description": "Dynamic, object-oriented language known for developer productivity (e.g. Ruby on Rails).",
+    "source": "onet"
+  },
+  {
+    "canonical": "Kotlin",
+    "alt_labels": [],
+    "description": "Statically typed language that runs on the JVM, commonly used for Android development.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Swift",
+    "alt_labels": [],
+    "description": "Compiled language developed by Apple for iOS/macOS application development.",
+    "source": "onet"
+  },
+  {
+    "canonical": "MATLAB",
+    "alt_labels": [],
+    "description": "Numerical computing environment and language used for data analysis, simulation, and engineering.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Julia",
+    "alt_labels": [],
+    "description": "High-performance dynamic language designed for numerical and scientific computing.",
+    "source": "onet"
+  },
+  {
+    "canonical": "PyTorch",
+    "alt_labels": [
+      "Torch",
+      "PyTorch Lightning"
+    ],
+    "description": "Open-source deep learning framework widely used for research and production ML.",
+    "source": "onet"
+  },
+  {
+    "canonical": "TensorFlow",
+    "alt_labels": [
+      "TF",
+      "TensorFlow 2"
+    ],
+    "description": "Open-source deep learning framework developed by Google.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Keras",
+    "alt_labels": [],
+    "description": "High-level neural network API, commonly used on top of TensorFlow.",
+    "source": "onet"
+  },
+  {
+    "canonical": "scikit-learn",
+    "alt_labels": [
+      "sklearn"
+    ],
+    "description": "Python library for classical machine learning: classification, regression, clustering, preprocessing.",
+    "source": "onet"
+  },
+  {
+    "canonical": "LangChain",
+    "alt_labels": [],
+    "description": "Framework for composing LLM applications: chains, retrieval, tools, and memory.",
+    "source": "onet"
+  },
+  {
+    "canonical": "LangGraph",
+    "alt_labels": [],
+    "description": "Graph-based orchestration framework for building stateful, multi-step LLM agent workflows (built on LangChain).",
+    "source": "onet"
+  },
+  {
+    "canonical": "Hugging Face Transformers",
+    "alt_labels": [
+      "Transformers library",
+      "HF Transformers",
+      "Hugging Face Hub"
+    ],
+    "description": "Library and model hub providing pretrained transformer models for NLP, vision, and speech.",
+    "source": "onet"
+  },
+  {
+    "canonical": "OpenAI API",
+    "alt_labels": [
+      "OpenAI SDK",
+      "GPT API"
+    ],
+    "description": "API for calling OpenAI's hosted large language models.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Anthropic Claude API",
+    "alt_labels": [
+      "Claude API",
+      "Anthropic SDK"
+    ],
+    "description": "API for calling Anthropic's Claude family of large language models.",
+    "source": "onet"
+  },
+  {
+    "canonical": "spaCy",
+    "alt_labels": [],
+    "description": "Python library for industrial-strength natural language processing.",
+    "source": "onet"
+  },
+  {
+    "canonical": "NLTK",
+    "alt_labels": [
+      "Natural Language Toolkit"
+    ],
+    "description": "Python library and teaching toolkit for natural language processing.",
+    "source": "onet"
+  },
+  {
+    "canonical": "XGBoost",
+    "alt_labels": [],
+    "description": "Optimized gradient boosting library widely used for tabular ML tasks.",
+    "source": "onet"
+  },
+  {
+    "canonical": "LightGBM",
+    "alt_labels": [],
+    "description": "Gradient boosting framework optimized for speed and large datasets.",
+    "source": "onet"
+  },
+  {
+    "canonical": "CatBoost",
+    "alt_labels": [],
+    "description": "Gradient boosting library with strong native support for categorical features.",
+    "source": "onet"
+  },
+  {
+    "canonical": "ONNX",
+    "alt_labels": [
+      "Open Neural Network Exchange"
+    ],
+    "description": "Open format for representing and interchanging trained ML models across frameworks.",
+    "source": "onet"
+  },
+  {
+    "canonical": "JAX",
+    "alt_labels": [],
+    "description": "High-performance numerical computing and autodiff library from Google, popular for ML research.",
+    "source": "onet"
+  },
+  {
+    "canonical": "OpenCV",
+    "alt_labels": [
+      "cv2"
+    ],
+    "description": "Open-source library for computer vision and image processing.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Pandas",
+    "alt_labels": [],
+    "description": "Python library for tabular data manipulation and analysis.",
+    "source": "onet"
+  },
+  {
+    "canonical": "NumPy",
+    "alt_labels": [],
+    "description": "Python library for fast numerical array computation, the base of the scientific Python stack.",
+    "source": "onet"
+  },
+  {
+    "canonical": "SciPy",
+    "alt_labels": [],
+    "description": "Python library for scientific and technical computing, built on NumPy.",
+    "source": "onet"
+  },
+  {
+    "canonical": "MLflow",
+    "alt_labels": [],
+    "description": "Open-source platform for tracking ML experiments, packaging models, and managing the ML lifecycle.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Weights & Biases",
+    "alt_labels": [
+      "W&B",
+      "wandb"
+    ],
+    "description": "Platform for experiment tracking, model/dataset versioning, and ML collaboration.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Ray",
+    "alt_labels": [
+      "Ray Serve",
+      "Ray Tune"
+    ],
+    "description": "Distributed computing framework for scaling Python and ML workloads.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Gensim",
+    "alt_labels": [],
+    "description": "Python library for topic modelling and document similarity using vector space modelling.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Sentence Transformers",
+    "alt_labels": [
+      "SBERT"
+    ],
+    "description": "Library for computing dense sentence/text embeddings using transformer models.",
+    "source": "onet"
+  },
+  {
+    "canonical": "LlamaIndex",
+    "alt_labels": [],
+    "description": "Data framework for connecting LLMs to private/custom data sources for RAG applications.",
+    "source": "onet"
+  },
+  {
+    "canonical": "AutoGen",
+    "alt_labels": [
+      "Microsoft AutoGen"
+    ],
+    "description": "Framework for building multi-agent LLM applications with conversational agents.",
+    "source": "onet"
+  },
+  {
+    "canonical": "CrewAI",
+    "alt_labels": [],
+    "description": "Framework for orchestrating role-based, collaborative multi-agent LLM workflows.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Semantic Kernel",
+    "alt_labels": [],
+    "description": "Microsoft SDK for integrating LLMs with conventional programming via planners and plugins.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Model Context Protocol",
+    "alt_labels": [
+      "MCP"
+    ],
+    "description": "Open protocol for connecting LLM applications to external tools, data sources, and agents.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Apache Spark",
+    "alt_labels": [
+      "Spark",
+      "PySpark"
+    ],
+    "description": "Distributed data processing engine for large-scale batch and streaming analytics.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Apache Airflow",
+    "alt_labels": [
+      "Airflow"
+    ],
+    "description": "Platform for authoring, scheduling, and monitoring data pipelines as DAGs.",
+    "source": "onet"
+  },
+  {
+    "canonical": "dbt",
+    "alt_labels": [
+      "data build tool"
+    ],
+    "description": "Tool for transforming data in the warehouse using SQL with version control and testing.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Apache Kafka",
+    "alt_labels": [
+      "Kafka"
+    ],
+    "description": "Distributed event-streaming platform for high-throughput, real-time data pipelines.",
+    "source": "onet"
+  },
+  {
+    "canonical": "ETL",
+    "alt_labels": [
+      "Extract Transform Load",
+      "ETL pipelines",
+      "ELT"
+    ],
+    "description": "The practice of extracting, transforming, and loading data between systems.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Apache Beam",
+    "alt_labels": [],
+    "description": "Unified programming model for defining batch and streaming data processing pipelines.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Apache Flink",
+    "alt_labels": [
+      "Flink"
+    ],
+    "description": "Distributed stream-processing framework for stateful computations over data streams.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Hadoop",
+    "alt_labels": [
+      "Apache Hadoop",
+      "HDFS"
+    ],
+    "description": "Framework for distributed storage and processing of large datasets across clusters.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Apache Hive",
+    "alt_labels": [
+      "Hive",
+      "HiveQL"
+    ],
+    "description": "Data warehouse software for querying and managing large datasets in distributed storage using SQL-like syntax.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Snowflake",
+    "alt_labels": [],
+    "description": "Cloud-based data warehousing platform supporting elastic compute and storage.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Databricks",
+    "alt_labels": [],
+    "description": "Unified data analytics platform built around Apache Spark, used for data engineering and ML.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Apache NiFi",
+    "alt_labels": [
+      "NiFi"
+    ],
+    "description": "Tool for automating and managing the flow of data between systems.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Prefect",
+    "alt_labels": [],
+    "description": "Python-based workflow orchestration tool for data pipelines.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Dagster",
+    "alt_labels": [],
+    "description": "Data orchestration platform for building, testing, and monitoring data pipelines.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Great Expectations",
+    "alt_labels": [],
+    "description": "Python library for validating, documenting, and profiling data quality.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Apache Parquet",
+    "alt_labels": [
+      "Parquet"
+    ],
+    "description": "Columnar storage file format optimized for analytics workloads.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Data Warehousing",
+    "alt_labels": [
+      "Data warehouse design"
+    ],
+    "description": "Designing systems that consolidate data from multiple sources for reporting and analytics.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Data Modeling",
+    "alt_labels": [
+      "Data modelling",
+      "Schema design"
+    ],
+    "description": "Designing how data is structured, related, and constrained within a database or system.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Change Data Capture",
+    "alt_labels": [
+      "CDC"
+    ],
+    "description": "Techniques for identifying and capturing changes made to data so they can be propagated downstream.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Data Pipeline Design",
+    "alt_labels": [
+      "Pipeline design",
+      "Data pipelines"
+    ],
+    "description": "Designing reliable, observable pipelines that move and transform data between systems.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Amazon Web Services",
+    "alt_labels": [
+      "AWS"
+    ],
+    "description": "Amazon's cloud computing platform offering compute, storage, database, and ML services.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Google Cloud Platform",
+    "alt_labels": [
+      "GCP"
+    ],
+    "description": "Google's cloud computing platform offering compute, storage, database, and ML services.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Microsoft Azure",
+    "alt_labels": [
+      "Azure"
+    ],
+    "description": "Microsoft's cloud computing platform offering compute, storage, database, and ML services.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Docker",
+    "alt_labels": [
+      "Containerization"
+    ],
+    "description": "Platform for packaging applications and dependencies into portable containers.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Kubernetes",
+    "alt_labels": [
+      "K8s"
+    ],
+    "description": "Open-source system for automating deployment, scaling, and management of containerized applications.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Terraform",
+    "alt_labels": [
+      "HashiCorp Terraform"
+    ],
+    "description": "Infrastructure-as-code tool for provisioning and managing cloud resources declaratively.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Ansible",
+    "alt_labels": [],
+    "description": "Automation tool for configuration management, application deployment, and orchestration.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Jenkins",
+    "alt_labels": [],
+    "description": "Open-source automation server used for building CI/CD pipelines.",
+    "source": "onet"
+  },
+  {
+    "canonical": "GitHub Actions",
+    "alt_labels": [],
+    "description": "CI/CD and automation platform built into GitHub.",
+    "source": "onet"
+  },
+  {
+    "canonical": "GitLab CI/CD",
+    "alt_labels": [
+      "GitLab CI"
+    ],
+    "description": "CI/CD platform built into GitLab for automating build, test, and deploy pipelines.",
+    "source": "onet"
+  },
+  {
+    "canonical": "CircleCI",
+    "alt_labels": [],
+    "description": "Cloud-based continuous integration and delivery platform.",
+    "source": "onet"
+  },
+  {
+    "canonical": "AWS CloudFormation",
+    "alt_labels": [
+      "CloudFormation"
+    ],
+    "description": "AWS service for defining and provisioning infrastructure as code using templates.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Helm",
+    "alt_labels": [
+      "Helm charts"
+    ],
+    "description": "Package manager for Kubernetes applications.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Serverless Computing",
+    "alt_labels": [
+      "AWS Lambda",
+      "Serverless",
+      "Lambda functions"
+    ],
+    "description": "Running code in stateless, event-triggered compute units without managing servers.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Nginx",
+    "alt_labels": [],
+    "description": "Web server, reverse proxy, and load balancer widely used in production infrastructure.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Linux System Administration",
+    "alt_labels": [
+      "Linux admin",
+      "Unix administration"
+    ],
+    "description": "Installing, configuring, and maintaining Linux-based servers and systems.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Prometheus",
+    "alt_labels": [],
+    "description": "Open-source monitoring and alerting toolkit, commonly used with Kubernetes.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Grafana",
+    "alt_labels": [],
+    "description": "Open-source platform for visualizing and dashboarding metrics and logs.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Datadog",
+    "alt_labels": [],
+    "description": "Cloud monitoring and observability platform for infrastructure, applications, and logs.",
+    "source": "onet"
+  },
+  {
+    "canonical": "CI/CD",
+    "alt_labels": [
+      "Continuous Integration",
+      "Continuous Deployment",
+      "Continuous Delivery"
+    ],
+    "description": "Practice of automating build, test, and release pipelines for software changes.",
+    "source": "esco"
+  },
+  {
+    "canonical": "PostgreSQL",
+    "alt_labels": [
+      "Postgres"
+    ],
+    "description": "Open-source, object-relational database system known for robustness and extensibility.",
+    "source": "onet"
+  },
+  {
+    "canonical": "MySQL",
+    "alt_labels": [],
+    "description": "Open-source relational database management system.",
+    "source": "onet"
+  },
+  {
+    "canonical": "SQLite",
+    "alt_labels": [],
+    "description": "Lightweight, file-based relational database engine often embedded in applications.",
+    "source": "onet"
+  },
+  {
+    "canonical": "MongoDB",
+    "alt_labels": [],
+    "description": "Document-oriented NoSQL database storing data as flexible, JSON-like documents.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Redis",
+    "alt_labels": [],
+    "description": "In-memory key-value data store used for caching, queues, and fast lookups.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Pinecone",
+    "alt_labels": [],
+    "description": "Managed vector database for storing and querying dense/sparse embeddings at scale.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Weaviate",
+    "alt_labels": [],
+    "description": "Open-source vector database supporting hybrid (vector + keyword) search.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Chroma",
+    "alt_labels": [
+      "ChromaDB"
+    ],
+    "description": "Open-source embedding/vector database designed for AI application development.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Elasticsearch",
+    "alt_labels": [],
+    "description": "Distributed search and analytics engine commonly used for full-text and log search.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Amazon DynamoDB",
+    "alt_labels": [
+      "DynamoDB"
+    ],
+    "description": "Fully managed NoSQL key-value and document database on AWS.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Apache Cassandra",
+    "alt_labels": [
+      "Cassandra"
+    ],
+    "description": "Distributed, highly available NoSQL wide-column database.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Neo4j",
+    "alt_labels": [],
+    "description": "Graph database for storing and querying highly connected data.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Google BigQuery",
+    "alt_labels": [
+      "BigQuery"
+    ],
+    "description": "Serverless, highly scalable cloud data warehouse for analytics.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Amazon Redshift",
+    "alt_labels": [
+      "Redshift"
+    ],
+    "description": "Fully managed cloud data warehouse service on AWS.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Vector Databases",
+    "alt_labels": [
+      "Vector search databases",
+      "Embedding stores"
+    ],
+    "description": "Databases purpose-built for storing and similarity-searching high-dimensional vector embeddings.",
+    "source": "esco"
+  },
+  {
+    "canonical": "FastAPI",
+    "alt_labels": [],
+    "description": "Modern, high-performance Python web framework for building APIs with async support and type hints.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Flask",
+    "alt_labels": [],
+    "description": "Lightweight Python web framework for building web applications and APIs.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Django",
+    "alt_labels": [],
+    "description": "High-level Python web framework encouraging rapid development and clean design.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Node.js",
+    "alt_labels": [
+      "NodeJS"
+    ],
+    "description": "JavaScript runtime for building server-side and networking applications.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Express.js",
+    "alt_labels": [
+      "Express"
+    ],
+    "description": "Minimal, flexible Node.js web application framework.",
+    "source": "onet"
+  },
+  {
+    "canonical": "REST APIs",
+    "alt_labels": [
+      "RESTful APIs",
+      "REST",
+      "RESTful web services"
+    ],
+    "description": "Architectural style for designing networked applications using stateless HTTP resources.",
+    "source": "esco"
+  },
+  {
+    "canonical": "GraphQL",
+    "alt_labels": [],
+    "description": "Query language and runtime for APIs that lets clients request exactly the data they need.",
+    "source": "onet"
+  },
+  {
+    "canonical": "gRPC",
+    "alt_labels": [],
+    "description": "High-performance RPC framework using Protocol Buffers, often used for microservice communication.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Next.js",
+    "alt_labels": [],
+    "description": "React framework providing server-side rendering, routing, and full-stack capabilities.",
+    "source": "onet"
+  },
+  {
+    "canonical": "React",
+    "alt_labels": [
+      "ReactJS",
+      "React.js"
+    ],
+    "description": "JavaScript library for building component-based user interfaces.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Vue.js",
+    "alt_labels": [
+      "Vue"
+    ],
+    "description": "Progressive JavaScript framework for building user interfaces.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Angular",
+    "alt_labels": [],
+    "description": "TypeScript-based web application framework developed by Google.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Microservices Architecture",
+    "alt_labels": [
+      "Microservices"
+    ],
+    "description": "Architectural style structuring an application as a collection of loosely coupled services.",
+    "source": "esco"
+  },
+  {
+    "canonical": "WebSockets",
+    "alt_labels": [],
+    "description": "Protocol providing full-duplex communication channels over a single TCP connection, used for real-time apps.",
+    "source": "onet"
+  },
+  {
+    "canonical": "OAuth / Authentication",
+    "alt_labels": [
+      "OAuth2",
+      "OAuth 2.0",
+      "Authentication & Authorization"
+    ],
+    "description": "Protocols and practices for authenticating users and authorizing access to resources.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Retrieval-Augmented Generation",
+    "alt_labels": [
+      "RAG"
+    ],
+    "description": "Technique that grounds LLM outputs by retrieving relevant external context before generation.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Embeddings",
+    "alt_labels": [
+      "Vector embeddings",
+      "Text embeddings"
+    ],
+    "description": "Dense numerical representations of text, images, or other data that capture semantic meaning.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Prompt Engineering",
+    "alt_labels": [
+      "Prompt design"
+    ],
+    "description": "The practice of designing and refining inputs to large language models to reliably elicit desired outputs.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Agent Orchestration",
+    "alt_labels": [
+      "AI agent orchestration",
+      "Agentic workflows"
+    ],
+    "description": "Designing and coordinating multi-step, tool-using AI agents to complete complex tasks.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Multi-Agent Systems",
+    "alt_labels": [],
+    "description": "Systems composed of multiple interacting autonomous agents that coordinate to solve tasks.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Natural Language Processing",
+    "alt_labels": [
+      "NLP"
+    ],
+    "description": "Field of AI focused on enabling computers to understand, interpret, and generate human language.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Computer Vision",
+    "alt_labels": [
+      "CV"
+    ],
+    "description": "Field of AI focused on enabling computers to interpret and understand visual information.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Statistics",
+    "alt_labels": [
+      "Statistical analysis"
+    ],
+    "description": "Mathematical discipline concerned with collecting, analyzing, and interpreting data.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Machine Learning",
+    "alt_labels": [
+      "ML"
+    ],
+    "description": "Field of AI focused on building systems that learn patterns from data rather than explicit rules.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Deep Learning",
+    "alt_labels": [],
+    "description": "Subfield of machine learning using multi-layer neural networks to learn representations from data.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Reinforcement Learning",
+    "alt_labels": [
+      "RL"
+    ],
+    "description": "Machine learning paradigm where agents learn behavior through trial-and-error interaction with an environment.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Model Fine-Tuning",
+    "alt_labels": [
+      "Fine-tuning",
+      "LLM fine-tuning"
+    ],
+    "description": "Adapting a pretrained model to a specific task or domain by continuing training on targeted data.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Transfer Learning",
+    "alt_labels": [],
+    "description": "Reusing a model trained on one task as the starting point for a related task.",
+    "source": "esco"
+  },
+  {
+    "canonical": "A/B Testing",
+    "alt_labels": [
+      "Split testing"
+    ],
+    "description": "Experimental method comparing two variants to determine which performs better against a metric.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Hyperparameter Tuning",
+    "alt_labels": [
+      "Hyperparameter optimization"
+    ],
+    "description": "Systematically searching for the model configuration settings that yield the best performance.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Feature Engineering",
+    "alt_labels": [],
+    "description": "Creating, transforming, or selecting input variables to improve model performance.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Time Series Analysis",
+    "alt_labels": [
+      "Time-series forecasting"
+    ],
+    "description": "Analyzing and forecasting data points collected or indexed over time.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Recommender Systems",
+    "alt_labels": [
+      "Recommendation systems"
+    ],
+    "description": "Systems that predict and suggest items a user is likely to want, based on behavior or content.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Model Evaluation & Benchmarking",
+    "alt_labels": [
+      "Model evaluation",
+      "ML benchmarking"
+    ],
+    "description": "Measuring model quality, robustness, and performance using held-out data and defined metrics.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Data Visualization",
+    "alt_labels": [
+      "Data viz"
+    ],
+    "description": "Representing data graphically to reveal patterns, trends, and insights.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Version Control",
+    "alt_labels": [
+      "Git",
+      "Source control"
+    ],
+    "description": "Tracking and managing changes to code and files over time, typically with tools like Git.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Unit Testing",
+    "alt_labels": [
+      "Test-driven development",
+      "TDD"
+    ],
+    "description": "Writing automated tests that verify individual units of code behave as expected.",
+    "source": "esco"
+  },
+  {
+    "canonical": "System Design",
+    "alt_labels": [
+      "Distributed systems design"
+    ],
+    "description": "Designing the architecture, components, and interfaces of a software system to meet requirements at scale.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Software Architecture",
+    "alt_labels": [],
+    "description": "High-level structuring of software systems, including components, their relationships, and design principles.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Algorithms & Data Structures",
+    "alt_labels": [
+      "Algorithm design",
+      "Data structures"
+    ],
+    "description": "Core computer science foundations for organizing data and designing efficient procedures to process it.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Distributed Systems",
+    "alt_labels": [],
+    "description": "Systems composed of multiple networked components that coordinate to appear as a single coherent system.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Observability",
+    "alt_labels": [
+      "Monitoring",
+      "Logging & tracing"
+    ],
+    "description": "Practices and tooling for understanding a system's internal state from its external outputs (logs, metrics, traces).",
+    "source": "esco"
+  },
+  {
+    "canonical": "Human-in-the-Loop Systems",
+    "alt_labels": [
+      "HITL"
+    ],
+    "description": "Systems that incorporate human review or approval into automated or AI-driven decision processes.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Prompt Injection & LLM Security",
+    "alt_labels": [
+      "Prompt injection",
+      "LLM security",
+      "Adversarial prompting"
+    ],
+    "description": "Identifying and defending against malicious inputs designed to manipulate LLM behavior.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Knowledge Graphs",
+    "alt_labels": [],
+    "description": "Graph-structured representations of entities and their relationships, used for reasoning and retrieval.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Vector Search / Similarity Search",
+    "alt_labels": [
+      "Semantic search",
+      "Nearest-neighbor search"
+    ],
+    "description": "Finding the most similar items to a query by comparing vector representations.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Information Retrieval",
+    "alt_labels": [
+      "IR"
+    ],
+    "description": "Field focused on finding relevant information or documents in response to a query.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Named Entity Recognition",
+    "alt_labels": [
+      "NER"
+    ],
+    "description": "NLP task of identifying and classifying named entities (people, orgs, locations) in text.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Tool Use / Function Calling",
+    "alt_labels": [
+      "Function calling",
+      "LLM tool use"
+    ],
+    "description": "Enabling an LLM to invoke external tools, APIs, or functions as part of generating a response.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Hybrid Search",
+    "alt_labels": [
+      "Dense + sparse retrieval"
+    ],
+    "description": "Combining dense (semantic) and sparse (lexical/keyword) retrieval signals to improve search relevance.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Explainable AI",
+    "alt_labels": [
+      "XAI",
+      "Model interpretability"
+    ],
+    "description": "Techniques for making machine learning model decisions understandable to humans.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Keyword Stuffing Detection",
+    "alt_labels": [
+      "Resume keyword stuffing detection"
+    ],
+    "description": "Identifying content that lists skills or keywords without supporting evidence of real use.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Agile Methodology",
+    "alt_labels": [
+      "Agile",
+      "Scrum",
+      "Kanban"
+    ],
+    "description": "Iterative approach to software delivery emphasizing incremental work, feedback, and collaboration.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Technical Communication",
+    "alt_labels": [
+      "Documentation",
+      "Written communication"
+    ],
+    "description": "Clearly explaining technical concepts, decisions, and systems to varied audiences.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Problem Solving",
+    "alt_labels": [
+      "Analytical thinking",
+      "Critical thinking"
+    ],
+    "description": "Identifying, analyzing, and resolving complex or ambiguous technical problems.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Code Review",
+    "alt_labels": [
+      "Peer review"
+    ],
+    "description": "Systematically examining code changes for correctness, quality, and maintainability before merging.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Debugging",
+    "alt_labels": [
+      "Troubleshooting"
+    ],
+    "description": "Systematically locating and fixing defects in software.",
+    "source": "esco"
+  },
+  {
+    "canonical": "API Design",
+    "alt_labels": [
+      "Interface design"
+    ],
+    "description": "Designing clear, consistent, and usable interfaces for software services and libraries.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Data Privacy & PII Handling",
+    "alt_labels": [
+      "PII handling",
+      "Data privacy"
+    ],
+    "description": "Practices for protecting personally identifiable information throughout its lifecycle.",
+    "source": "esco"
+  },
+  {
+    "canonical": "Model Context Protocol Servers",
+    "alt_labels": [
+      "MCP servers"
+    ],
+    "description": "Building servers that expose tools, resources, or data to LLM clients via the Model Context Protocol.",
+    "source": "onet"
+  },
+  {
+    "canonical": "GitHub REST API",
+    "alt_labels": [
+      "GitHub API"
+    ],
+    "description": "Public API for programmatically reading and managing GitHub repositories, users, and activity.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Langfuse",
+    "alt_labels": [],
+    "description": "Open-source observability and tracing platform for LLM applications.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Jupyter Notebooks",
+    "alt_labels": [
+      "Jupyter",
+      "IPython notebooks"
+    ],
+    "description": "Interactive, cell-based computing environment widely used for data science and ML experimentation.",
+    "source": "onet"
+  },
+  {
+    "canonical": "Postman",
+    "alt_labels": [],
+    "description": "Tool for designing, testing, and documenting HTTP APIs.",
+    "source": "onet"
+  }
+]

@@ -17,11 +17,23 @@ from typing import Any
 class VectorRecord:
     """One record to upsert. `values` is the dense OR sparse vector depending
     on which index this is written to; callers pick the index, not the record.
+
+    `values` holds a DENSE vector (one float per embedding dimension) —
+    populate this for records written to a dense index. `sparse_indices` /
+    `sparse_values` together hold a SPARSE vector (parallel arrays of
+    vocabulary-index -> weight; sparse vectors are far too high-dimensional
+    to represent as a dense `list[float]`) — populate this pair for records
+    written to a sparse index. A record should populate exactly one of the
+    two representations (dense `values`, or the sparse pair), never both;
+    for a sparse record, pass `values=[]`. This is a caller/implementation
+    invariant for M0 — the class itself does not enforce it.
     """
 
     id: str
     values: list[float]
     metadata: dict[str, Any] = field(default_factory=dict)
+    sparse_indices: list[int] | None = None
+    sparse_values: list[float] | None = None
 
 
 @dataclass(frozen=True)

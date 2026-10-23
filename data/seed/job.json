@@ -1,0 +1,59 @@
+{
+  "title": "AI Intern, Applied & Agentic AI",
+  "location": "Vancouver, British Columbia, Canada (on-site, 5 days/week)",
+  "employment_type": "Internship (Student Work Placement Program)",
+  "dates": "December 2026 – April 2027",
+  "raw_description": "ProCogia is a data and AI consulting firm helping organizations in highly regulated and high-stakes industries (telecommunications, financial services, life sciences, healthcare, and the public sector) turn complex technology challenges into measurable business outcomes.\n\nThis internship is for students who want to move beyond AI experimentation and learn how to build systems that function in real enterprise environments. The intern will work alongside ProCogia's AI, data science, and engineering teams to design, build, evaluate, and improve AI agents, agentic workflows, RAG systems, and LLM-powered applications.\n\nKey responsibilities:\n- Design, build, test, and improve AI agents and agentic workflows for internal and client-facing solutions.\n- Develop RAG (retrieval-augmented generation) pipelines that provide grounded responses with citations and source traceability.\n- Integrate commercial and open-source LLMs into applications using APIs, SDKs, and enterprise systems.\n- Apply evaluation-driven development: benchmarking, quality measurement, and iteration.\n- Build solutions that emphasize observability, auditability, and human oversight.\n- Establish API, database, and cloud service integrations.\n- Follow software engineering best practices: testing, version control, and documentation.\n- Help convert prototypes into scalable, production-ready applications alongside consultants and engineers.\n\nCompensation: $23/hour (CAD). This role is supported by Canada's Student Work Placement Program; applicants must be Canadian citizens, permanent residents, or persons granted refugee protection, and must be enrolled full-time at a recognized Canadian post-secondary institution through April 2027. International students are not eligible for this government-supported placement.",
+  "requirements": [
+    {
+      "text": "Currently pursuing (final year) or recently completed a Bachelor's, Master's, or PhD in Computer Science, Machine Learning, AI, Data Science, or a related field",
+      "kind": "must_have",
+      "weight": 1.0
+    },
+    {
+      "text": "Strong Python proficiency, with solid debugging, testing, and version-control (git) fundamentals",
+      "kind": "must_have",
+      "weight": 2.0
+    },
+    {
+      "text": "Full-stack development experience: frontend, backend, and APIs working together end to end",
+      "kind": "must_have",
+      "weight": 1.5
+    },
+    {
+      "text": "Familiarity with React and backend frameworks such as Node.js or FastAPI",
+      "kind": "must_have",
+      "weight": 1.5
+    },
+    {
+      "text": "Hands-on exposure to generative AI, LLMs, or AI agents, with the ability to convert prototypes into functional, end-to-end applications",
+      "kind": "must_have",
+      "weight": 2.0
+    },
+    {
+      "text": "Strong independent problem-solving ability and clear technical communication skills",
+      "kind": "must_have",
+      "weight": 1.0
+    },
+    {
+      "text": "Experience building LLM applications, AI agents, or agentic workflows (e.g. LangChain, LangGraph, the Model Context Protocol)",
+      "kind": "nice_to_have",
+      "weight": 1.0
+    },
+    {
+      "text": "Experience with retrieval-augmented generation (RAG) architectures and AI evaluation / benchmarking methodology",
+      "kind": "nice_to_have",
+      "weight": 1.0
+    },
+    {
+      "text": "Familiarity with cloud platforms (AWS, GCP, or Azure) and containerization (Docker)",
+      "kind": "nice_to_have",
+      "weight": 0.75
+    },
+    {
+      "text": "Experience with open-source LLMs, or prior software/research projects demonstrating ownership and curiosity (e.g. open-source contributions, published research, personal or academic projects)",
+      "kind": "nice_to_have",
+      "weight": 0.5
+    }
+  ]
+}
